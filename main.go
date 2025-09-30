@@ -18,6 +18,8 @@ func main() {
 		new_db()
 	}
 
+	mount()
+
 	go dir_watch()
 	go dequeue()
 	select {}
