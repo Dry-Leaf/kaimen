@@ -1,0 +1,4 @@
+test_images/
+*.exe
+*.env
+tasks.txt

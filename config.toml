@@ -1,0 +1,34 @@
+# Tag Injector Configuration
+
+# Add account details to api_urls if need be
+
+
+[[boards]]
+
+    name = 'GELBOORU'
+
+    url = 'https://gelbooru.com/index.php?limit=1&page=dapi&s=post&q=index'
+
+    api_params = 'user_id=%s&api_key=%s'
+
+    tag_regex = '<tags>(.+)</tags>'
+
+
+[[boards]]
+
+    name = 'DANBOORU'
+
+    url = 'https://danbooru.donmai.us/posts.xml?limit=1'
+
+    api_params = 'login=%s&api_key=%s'
+
+    tag_regex = '<tag-string>(.+)</tag-string>'
+
+
+[[boards]]
+
+    name = 'YANDERE'
+
+    url = 'https://yande.re/post.xml?limit=1'
+
+    tag_regex = 'tags="([^"]+)'
