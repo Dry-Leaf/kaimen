@@ -23,6 +23,38 @@ const file_tag_table = `CREATE TABLE file_tags (
 		FOREIGN KEY(tag) REFERENCES tags(name)
 	)`
 
+const new_image = `INSERT INTO files(md5,file_path) VALUES(?,?)`
+
+const new_tag = `INSERT INTO tags(name) VALUES(?) ON CONFLICT(name) DO NOTHING`
+
+const new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
+
+func insert_metadata(md5sum, path string, tags []string) {
+	conn, err := sql.Open("sqlite3", "booru.db")
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	new_image_stmt, err := tx.Prepare(new_image)
+	Err_check(err)
+	new_image_stmt.Exec(md5sum, path)
+
+	new_relation_stmt, err := tx.Prepare(new_relation)
+	Err_check(err)
+
+	new_tag_stmt, err := tx.Prepare(new_tag)
+	Err_check(err)
+
+	for _, tag := range tags {
+		new_tag_stmt.Exec(tag)
+		new_relation_stmt.Exec(md5sum, tag)
+	}
+
+	tx.Commit()
+}
+
 func new_db() {
 	file, err := os.Create("booru.db")
 	Err_check(err)
@@ -33,9 +65,14 @@ func new_db() {
 	Err_check(err)
 	defer conn.Close()
 
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
 	for _, stmt := range []string{file_table, tag_table, file_tag_table} {
-		statement, err := conn.Prepare(stmt)
+		statement, err := tx.Prepare(stmt)
 		Err_check(err)
 		statement.Exec()
 	}
+
+	tx.Commit()
 }
