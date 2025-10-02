@@ -2,3 +2,4 @@ test_images/
 *.exe
 *.env
 tasks.txt
+tasks.md

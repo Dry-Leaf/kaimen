@@ -8,6 +8,7 @@ import "C"
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/winfsp/cgofuse/fuse"
@@ -18,11 +19,19 @@ const (
 	contents = "hello, world\n"
 )
 
-const test_path = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test_images\test\fuck\more\7ea50c1cece31d98c345b05573bc6e8c.mp4`
+const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 const test_ext = `.mp4`
 
 type fs struct {
 	fuse.FileSystemBase
+}
+
+func errno(err error) int {
+	if nil != err {
+		return -int(err.(syscall.Errno))
+	} else {
+		return 0
+	}
 }
 
 func copyFusestatFromFileInfo(stat *fuse.Stat_t, info os.FileInfo) {
@@ -67,11 +76,11 @@ func (self *fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	case "/":
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
-	case "/" + filename + test_ext:
+	default:
 		var info os.FileInfo
 		var err error
 
-		info, err = os.Stat(test_path)
+		info, err = os.Stat(filepath.Join(root, path))
 		if err != nil {
 			if os.IsNotExist(err) {
 				return -int(syscall.ENOENT)
@@ -81,13 +90,11 @@ func (self *fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 
 		copyFusestatFromFileInfo(stat, info)
 		return 0
-	default:
-		return -fuse.ENOENT
 	}
 }
 
 func (self *fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	file, err := os.Open(test_path)
+	file, err := os.Open(filepath.Join(root, path))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return -int(syscall.ENOENT)
@@ -108,9 +115,23 @@ func (self *fs) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
-	fill(".", nil, 0)
-	fill("..", nil, 0)
-	fill(filename+test_ext, nil, 0)
+	path = filepath.Join(root, path)
+	file, e := os.Open(path)
+	if nil != e {
+		return errno(e)
+	}
+	defer file.Close()
+
+	nams, e := file.Readdirnames(0)
+	if nil != e {
+		return errno(e)
+	}
+
+	nams = append([]string{".", ".."}, nams...)
+	for _, name := range nams {
+		fill(name, nil, 0)
+	}
+
 	return 0
 }
 
