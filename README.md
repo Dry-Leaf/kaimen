@@ -1,4 +1,5 @@
 Linux, requires libfuse-dev
+
 Windows requires WinFsp
 
 Windows compilation
