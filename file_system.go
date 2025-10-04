@@ -1,10 +1,5 @@
 package main
 
-/*
-#cgo windows LDFLAGS: -L${SRCDIR}/winfsp/lib
-*/
-import "C"
-
 import (
 	"io"
 	"os"
@@ -14,15 +9,9 @@ import (
 	"github.com/winfsp/cgofuse/fuse"
 )
 
-const (
-	filename = "hello"
-	contents = "hello, world\n"
-)
-
 const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
-const test_ext = `.mp4`
 
-type fs struct {
+type kaimen_fs struct {
 	fuse.FileSystemBase
 }
 
@@ -63,7 +52,7 @@ func copyFusestatFromFileInfo(stat *fuse.Stat_t, info os.FileInfo) {
 	stat.Ctim.Nsec = int64(t.Nanosecond())
 }
 
-func (self *fs) Open(path string, flags int) (errc int, fh uint64) {
+func (self *kaimen_fs) Open(path string, flags int) (errc int, fh uint64) {
 	if flags&^syscall.O_RDONLY != 0 {
 		return 0, uint64(syscall.EACCES) // deny write attempts
 	}
@@ -71,7 +60,7 @@ func (self *fs) Open(path string, flags int) (errc int, fh uint64) {
 	return 0, 0
 }
 
-func (self *fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	switch path {
 	case "/":
 		stat.Mode = fuse.S_IFDIR | 0555
@@ -93,7 +82,7 @@ func (self *fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	}
 }
 
-func (self *fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
+func (self *kaimen_fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	file, err := os.Open(filepath.Join(root, path))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -111,7 +100,7 @@ func (self *fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	return n
 }
 
-func (self *fs) Readdir(path string,
+func (self *kaimen_fs) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
@@ -136,7 +125,7 @@ func (self *fs) Readdir(path string,
 }
 
 func mount() {
-	hellofs := &fs{}
+	hellofs := &kaimen_fs{}
 	host := fuse.NewFileSystemHost(hellofs)
 	host.Mount("", os.Args[1:])
 }

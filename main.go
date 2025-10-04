@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func Err_check(err error) {
@@ -18,8 +19,9 @@ func main() {
 		new_db()
 	}
 
-	mount()
+	filepath.WalkDir("./test_images", initial_crawl)
 
+	go mount()
 	go dir_watch()
 	go dequeue()
 	select {}

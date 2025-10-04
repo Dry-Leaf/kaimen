@@ -8,6 +8,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/rjeczalik/notify v0.9.3
 	github.com/winfsp/cgofuse v1.6.0
+	github.com/gabriel-vasile/mimetype v1.4.10 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 )
-
-require golang.org/x/sys v0.17.0 // indirect

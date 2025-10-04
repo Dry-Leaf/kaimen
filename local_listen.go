@@ -18,7 +18,6 @@ func dequeue() {
 			now := time.Now()
 			pending.Range(func(key, _ any) bool {
 				path := key.(string)
-				fmt.Println(path)
 
 				info, err := os.Stat(path)
 				if err != nil {
@@ -27,9 +26,13 @@ func dequeue() {
 					return true
 				}
 
+				fmt.Println(path)
+
 				if now.Sub(info.ModTime()) >= interval {
-					pending.Delete(path)
-					go process(path)
+					go func(p string) {
+						process(p)
+						pending.Delete(p)
+					}(path)
 				}
 				return true
 			})
@@ -48,6 +51,6 @@ func dir_watch() {
 	for {
 		ei := <-c
 
-		pending.Store(ei.Path(), nil)
+		pending.LoadOrStore(ei.Path(), nil)
 	}
 }
