@@ -7,8 +7,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type mirror_file struct {
+	md5       string
+	extension string
+	file_path string
+}
+
 const file_table = `CREATE TABLE files (
 		md5 TEXT PRIMARY KEY,
+		extension TEXT NOT NULL,
 		file_path TEXT NOT NULL
 	)`
 
@@ -23,32 +30,30 @@ const file_tag_table = `CREATE TABLE file_tags (
 		FOREIGN KEY(tag) REFERENCES tags(name)
 	)`
 
-const new_image = `INSERT INTO files(md5,file_path) VALUES(?,?) ON CONFLICT(md5) DO NOTHING`
+const new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?)`
 
-const new_tag = `INSERT INTO tags(name) VALUES(?) ON CONFLICT(name) DO NOTHING`
+const new_tag = `INSERT INTO tags(name) VALUES(?)`
 
 const new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
 
 const image_exists = `SELECT COUNT(md5) FROM files WHERE md5 = ?`
+
+const query_images = `SELECT * FROM files`
 
 func dup_check(md5sum string) int {
 	conn, err := sql.Open("sqlite3", "booru.db")
 	Err_check(err)
 	defer conn.Close()
 
-	tx, err := conn.Begin()
-	defer tx.Rollback()
-
 	var result int
 
-	image_exists_stmt, err := tx.Prepare(image_exists)
+	err = conn.QueryRow(image_exists, md5sum).Scan(&result)
 	Err_check(err)
-	image_exists_stmt.QueryRow(md5sum).Scan(&result)
 
 	return result
 }
 
-func insert_metadata(md5sum, path string, tags []string) {
+func insert_metadata(md5sum, path, ext string, tags []string) {
 	conn, err := sql.Open("sqlite3", "booru.db")
 	Err_check(err)
 	defer conn.Close()
@@ -58,7 +63,7 @@ func insert_metadata(md5sum, path string, tags []string) {
 
 	new_image_stmt, err := tx.Prepare(new_image)
 	Err_check(err)
-	new_image_stmt.Exec(md5sum, path)
+	new_image_stmt.Exec(md5sum, ext, path)
 
 	new_relation_stmt, err := tx.Prepare(new_relation)
 	Err_check(err)

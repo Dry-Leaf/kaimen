@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/rjeczalik/notify"
 )
 
@@ -19,6 +20,9 @@ func dequeue() {
 			pending.Range(func(key, _ any) bool {
 				path := key.(string)
 
+				mtype, err := mimetype.DetectFile(path)
+				Err_check(err)
+
 				info, err := os.Stat(path)
 				if err != nil {
 					pending.Delete(path)
@@ -30,7 +34,7 @@ func dequeue() {
 
 				if now.Sub(info.ModTime()) >= interval {
 					go func(p string) {
-						process(p)
+						process(p, mtype.Extension())
 						pending.Delete(p)
 					}(path)
 				}
