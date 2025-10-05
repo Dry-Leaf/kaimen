@@ -7,9 +7,9 @@
 
     name = 'GELBOORU'
 
-    url = 'https://gelbooru.com/index.php?limit=1&page=dapi&s=post&q=index'
+    url = 'https://gelbooru.com/index.php?limit=1&page=dapi&s=post&q=index&tags=md5%3A'
 
-    api_params = 'user_id=%s&api_key=%s'
+    api_params = '&user_id=%s&api_key=%s'
 
     tag_regex = '<tags>(.+)</tags>'
 
@@ -18,9 +18,9 @@
 
     name = 'DANBOORU'
 
-    url = 'https://danbooru.donmai.us/posts.xml?limit=1'
+    url = 'https://danbooru.donmai.us/posts.xml?limit=1&tags=md5%3A'
 
-    api_params = 'login=%s&api_key=%s'
+    api_params = '&login=%s&api_key=%s'
 
     tag_regex = '<tag-string>(.+)</tag-string>'
 
@@ -29,6 +29,6 @@
 
     name = 'YANDERE'
 
-    url = 'https://yande.re/post.xml?limit=1'
+    url = 'https://yande.re/post.xml?limit=1&tags=md5%3A'
 
     tag_regex = 'tags="([^"]+)'

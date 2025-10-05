@@ -9,17 +9,17 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Source struct {
+type SOURCE struct {
 	NAME       string
 	URL        string
 	API_PARAMS string
 	TAG_REGEX  *regexp.Regexp
 }
 
-var Sources []Source
+var Sources []*SOURCE
 
 func Read_conf() {
-	tmp := make(map[string][]Source)
+	tmp := make(map[string][]*SOURCE)
 
 	_, err := toml.DecodeFile("config.toml", &tmp)
 	Err_check(err)
@@ -33,8 +33,15 @@ func Read_conf() {
 		if booru.API_PARAMS != "" {
 			login := os.Getenv(booru.NAME + "_LOGIN")
 			api_key := os.Getenv(booru.NAME + "_API_KEY")
-			booru.API_PARAMS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
+			if login == "" || api_key == "" {
+				booru.API_PARAMS = ""
+			} else {
+				booru.API_PARAMS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
+			}
 		}
 	}
 
+	for _, booru := range Sources {
+		fmt.Println(*booru)
+	}
 }

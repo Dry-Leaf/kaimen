@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -15,25 +14,17 @@ const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 
 var result_map = make(map[string]string)
 
-type kaimen_fs struct {
+type KAIMEN_FS struct {
 	fuse.FileSystemBase
-}
-
-func errno(err error) int {
-	if nil != err {
-		return -int(err.(syscall.Errno))
-	} else {
-		return 0
-	}
 }
 
 func copyFusestatFromFileInfo(stat *fuse.Stat_t, info os.FileInfo) {
 	// File mode (permissions + type)
 	stat.Mode = uint32(info.Mode().Perm())
 	if info.IsDir() {
-		stat.Mode |= syscall.S_IFDIR
+		stat.Mode |= fuse.S_IFDIR
 	} else {
-		stat.Mode |= syscall.S_IFREG
+		stat.Mode |= fuse.S_IFREG
 	}
 
 	// File size
@@ -56,15 +47,15 @@ func copyFusestatFromFileInfo(stat *fuse.Stat_t, info os.FileInfo) {
 	stat.Ctim.Nsec = int64(t.Nanosecond())
 }
 
-func (self *kaimen_fs) Open(path string, flags int) (errc int, fh uint64) {
-	if flags&^syscall.O_RDONLY != 0 {
-		return 0, uint64(syscall.EACCES) // deny write attempts
+func (self *KAIMEN_FS) Open(path string, flags int) (errc int, fh uint64) {
+	if flags&^fuse.O_RDONLY != 0 {
+		return 0, uint64(fuse.EACCES) // deny write attempts
 	}
 
 	return 0, 0
 }
 
-func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
+func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	switch path {
 	case "/":
 		stat.Mode = fuse.S_IFDIR | 0555
@@ -82,7 +73,7 @@ func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		info, err = os.Stat(real_path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				return -int(syscall.ENOENT)
+				return -int(fuse.ENOENT)
 			}
 			Err_check(err)
 		}
@@ -92,14 +83,14 @@ func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 	}
 }
 
-func (self *kaimen_fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
+func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	_, filename := filepath.Split(path)
 	real_path := result_map[filename]
 
 	file, err := os.Open(real_path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return -int(syscall.ENOENT)
+			return -int(fuse.ENOENT)
 		}
 		Err_check(err)
 	}
@@ -107,13 +98,13 @@ func (self *kaimen_fs) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 
 	n, err = file.ReadAt(buff, ofst)
 	if err != nil && err != io.EOF {
-		return int(syscall.EIO)
+		return int(fuse.EIO)
 	}
 
 	return n
 }
 
-func (self *kaimen_fs) Readdir(path string,
+func (self *KAIMEN_FS) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
@@ -133,7 +124,7 @@ func (self *kaimen_fs) Readdir(path string,
 		}
 
 		for file_rows.Next() {
-			var cmirror mirror_file
+			var cmirror MIRROR_FILE
 			err = file_rows.Scan(&cmirror.md5, &cmirror.extension, &cmirror.file_path)
 			Err_check(err)
 
@@ -154,7 +145,7 @@ func (self *kaimen_fs) Readdir(path string,
 }
 
 func mount() {
-	hellofs := &kaimen_fs{}
+	hellofs := &KAIMEN_FS{}
 	host := fuse.NewFileSystemHost(hellofs)
 	host.Mount("", os.Args[1:])
 }

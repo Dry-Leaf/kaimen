@@ -21,8 +21,7 @@ func main() {
 
 	filepath.WalkDir("./test_images", initial_crawl)
 
-	go mount()
 	go dir_watch()
 	go dequeue()
-	select {}
+	mount()
 }
