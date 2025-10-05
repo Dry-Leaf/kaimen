@@ -7,7 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type mirror_file struct {
+type MIRROR_FILE struct {
 	md5       string
 	extension string
 	file_path string

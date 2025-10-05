@@ -13,15 +13,12 @@ import (
 var pending sync.Map
 
 func dequeue() {
-	interval := 30 * time.Second
+	interval := time.Minute
 	for range time.Tick(interval) {
 		func() {
 			now := time.Now()
 			pending.Range(func(key, _ any) bool {
 				path := key.(string)
-
-				mtype, err := mimetype.DetectFile(path)
-				Err_check(err)
 
 				info, err := os.Stat(path)
 				if err != nil {
@@ -30,9 +27,11 @@ func dequeue() {
 					return true
 				}
 
-				fmt.Println(path)
+				mtype, err := mimetype.DetectFile(path)
+				Err_check(err)
 
 				if now.Sub(info.ModTime()) >= interval {
+					fmt.Println("About to process", path)
 					go func(p string) {
 						process(p, mtype.Extension())
 						pending.Delete(p)
@@ -55,6 +54,7 @@ func dir_watch() {
 	for {
 		ei := <-c
 
-		pending.LoadOrStore(ei.Path(), nil)
+		_, loaded := pending.LoadOrStore(ei.Path(), struct{}{})
+		fmt.Println(loaded, ei.Path())
 	}
 }

@@ -7,12 +7,16 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
 )
+
+const md5sum_regex = `\A[a-f0-9]{32}$`
 
 var supported = [...]string{"image/jpeg", "image/png", "image/gif", "image/jxl",
 	"video/mp4", "video/webm"}
@@ -35,17 +39,43 @@ func initial_crawl(path string, d fs.DirEntry, err error) error {
 }
 
 func process(path, ext string) {
-	fmt.Println(path)
-
 	f, err := os.Open(path)
-	Err_check(err)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		} else {
+			Err_check(err)
+		}
+	}
 	defer f.Close()
 
-	h := md5.New()
-	_, err = io.Copy(h, f)
+	fmt.Println("Process", path)
+
+	_, filename := filepath.Split(path)
+	last_dot := strings.LastIndex(filename, ".")
+
+	fnstem := func(fn string, ld int) string {
+		if ld == -1 {
+			return fn
+		} else {
+			return fn[:ld]
+		}
+	}(filename, last_dot)
+
+	match, err := regexp.MatchString(md5sum_regex, fnstem)
 	Err_check(err)
 
-	md5sum := fmt.Sprintf("%x", h.Sum(nil))
+	var md5sum string
+
+	if match {
+		md5sum = fnstem
+	} else {
+		h := md5.New()
+		_, err = io.Copy(h, f)
+		Err_check(err)
+
+		md5sum = fmt.Sprintf("%x", h.Sum(nil))
+	}
 
 	// check db if file already there
 	result := dup_check(md5sum)
@@ -65,7 +95,15 @@ func process(path, ext string) {
 
 func get_tags(md5sum string) []string {
 	for _, booru := range Sources {
-		resp, err := http.Get(booru.URL + md5sum)
+		url := booru.URL + md5sum
+		if booru.API_PARAMS != "" {
+			url += booru.API_PARAMS
+		} else {
+			fmt.Println(*booru)
+		}
+
+		fmt.Println(url)
+		resp, err := http.Get(url)
 		Err_check(err)
 		defer resp.Body.Close()
 
