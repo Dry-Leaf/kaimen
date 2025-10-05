@@ -1,6 +1,8 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,6 +12,8 @@ import (
 )
 
 const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
+
+var result_map = make(map[string]string)
 
 type kaimen_fs struct {
 	fuse.FileSystemBase
@@ -65,11 +69,17 @@ func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 	case "/":
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
+	case "/search":
+		stat.Mode = fuse.S_IFDIR | 0555
+		return 0
 	default:
 		var info os.FileInfo
 		var err error
 
-		info, err = os.Stat(filepath.Join(root, path))
+		_, filename := filepath.Split(path)
+		real_path := result_map[filename]
+
+		info, err = os.Stat(real_path)
 		if err != nil {
 			if os.IsNotExist(err) {
 				return -int(syscall.ENOENT)
@@ -83,7 +93,10 @@ func (self *kaimen_fs) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 }
 
 func (self *kaimen_fs) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
-	file, err := os.Open(filepath.Join(root, path))
+	_, filename := filepath.Split(path)
+	real_path := result_map[filename]
+
+	file, err := os.Open(real_path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return -int(syscall.ENOENT)
@@ -104,22 +117,38 @@ func (self *kaimen_fs) Readdir(path string,
 	fill func(name string, stat *fuse.Stat_t, ofst int64) bool,
 	ofst int64,
 	fh uint64) (errc int) {
-	path = filepath.Join(root, path)
-	file, e := os.Open(path)
-	if nil != e {
-		return errno(e)
-	}
-	defer file.Close()
 
-	nams, e := file.Readdirnames(0)
-	if nil != e {
-		return errno(e)
+	var nams []string
+
+	if path != "/search" {
+		nams = []string{".", "..", "search"}
+	} else {
+		conn, err := sql.Open("sqlite3", "booru.db")
+		Err_check(err)
+		defer conn.Close()
+
+		file_rows, err := conn.Query(query_images)
+		if err != sql.ErrNoRows {
+			Err_check(err)
+		}
+
+		for file_rows.Next() {
+			var cmirror mirror_file
+			err = file_rows.Scan(&cmirror.md5, &cmirror.extension, &cmirror.file_path)
+			Err_check(err)
+
+			result_map[cmirror.md5+cmirror.extension] = cmirror.file_path
+
+			nams = append(nams, cmirror.md5+cmirror.extension)
+		}
 	}
 
 	nams = append([]string{".", ".."}, nams...)
 	for _, name := range nams {
 		fill(name, nil, 0)
 	}
+
+	fmt.Println(nams)
 
 	return 0
 }

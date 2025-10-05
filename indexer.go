@@ -27,14 +27,14 @@ func initial_crawl(path string, d fs.DirEntry, err error) error {
 		Err_check(err)
 
 		if slices.Contains(supported[:], mtype.String()) {
-			process(path)
+			process(path, mtype.Extension())
 		}
 	}
 
 	return nil
 }
 
-func process(path string) {
+func process(path, ext string) {
 	fmt.Println(path)
 
 	f, err := os.Open(path)
@@ -59,7 +59,7 @@ func process(path string) {
 
 	tags := get_tags(md5sum)
 	if tags != nil {
-		insert_metadata(md5sum, path, tags)
+		insert_metadata(md5sum, path, ext, tags)
 	}
 }
 
