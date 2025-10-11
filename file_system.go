@@ -73,6 +73,7 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		info, err = os.Stat(real_path)
 		if err != nil {
 			if os.IsNotExist(err) {
+				delete_file(real_path)
 				return -int(fuse.ENOENT)
 			}
 			Err_check(err)
@@ -114,7 +115,7 @@ func (self *KAIMEN_FS) Readdir(path string,
 	if path != "/search" {
 		nams = []string{".", "..", "search"}
 	} else {
-		conn, err := sql.Open("sqlite3", "booru.db")
+		conn, err := sql.Open("sqlite3", db_uri)
 		Err_check(err)
 		defer conn.Close()
 

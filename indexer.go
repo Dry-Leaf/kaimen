@@ -78,7 +78,7 @@ func process(path, ext string) {
 	}
 
 	// check db if file already there
-	result := dup_check(md5sum)
+	result := dup_check(md5sum, path)
 	if result > 0 {
 		return
 	}
