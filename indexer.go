@@ -62,14 +62,21 @@ func process(path, ext string) {
 		}
 	}(filename, last_dot)
 
-	match, err := regexp.MatchString(md5sum_regex, fnstem)
-	Err_check(err)
-
 	var md5sum string
 
-	if match {
-		md5sum = fnstem
-	} else {
+	if lfn := len(fnstem); lfn >= 32 {
+		fnstem = fnstem[lfn-32:]
+
+		match, err := regexp.MatchString(md5sum_regex, fnstem)
+		Err_check(err)
+
+		if match {
+			fmt.Println("MATCH")
+			md5sum = fnstem
+		}
+	}
+
+	if md5sum == "" {
 		h := md5.New()
 		_, err = io.Copy(h, f)
 		Err_check(err)

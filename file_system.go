@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -115,24 +114,7 @@ func (self *KAIMEN_FS) Readdir(path string,
 	if path != "/search" {
 		nams = []string{".", "..", "search"}
 	} else {
-		conn, err := sql.Open("sqlite3", db_uri)
-		Err_check(err)
-		defer conn.Close()
-
-		file_rows, err := conn.Query(query_images)
-		if err != sql.ErrNoRows {
-			Err_check(err)
-		}
-
-		for file_rows.Next() {
-			var cmirror MIRROR_FILE
-			err = file_rows.Scan(&cmirror.md5, &cmirror.extension, &cmirror.file_path)
-			Err_check(err)
-
-			result_map[cmirror.md5+cmirror.extension] = cmirror.file_path
-
-			nams = append(nams, cmirror.md5+cmirror.extension)
-		}
+		nams = query()
 	}
 
 	nams = append([]string{".", ".."}, nams...)

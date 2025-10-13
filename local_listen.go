@@ -46,7 +46,7 @@ func dequeue() {
 func dir_watch() {
 	c := make(chan notify.EventInfo, 200)
 
-	err := notify.Watch("test_images/...", c, notify.Create, notify.Remove)
+	err := notify.Watch("test_images/...", c, notify.Create)
 	Err_check(err)
 
 	defer notify.Stop(c)
