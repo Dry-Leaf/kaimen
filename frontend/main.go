@@ -29,12 +29,12 @@ func main() {
 	}
 
 	//must be passed an absolute path
-	// filepath.WalkDir(`C:\Users\nobody\Documents\code\compiled\go\kaimen\test_images`, initial_crawl)
+	filepath.WalkDir(`C:\Users\nobody\Documents\code\compiled\go\kaimen\test_images`, initial_crawl)
 
-	file_count := get_count()
-	// go dir_watch()
-	// go dequeue()
-	load_counters()
-	ui(file_count)
-	//mount()
+	//file_count := get_count()
+	go dir_watch()
+	go dequeue()
+	go server()
+
+	mount()
 }

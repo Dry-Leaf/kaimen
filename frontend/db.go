@@ -25,7 +25,8 @@ const file_table = `CREATE TABLE IF NOT EXISTS files (
 	)`
 
 const tag_table = `CREATE TABLE IF NOT EXISTS tags (
-		name TEXT PRIMARY KEY
+		name TEXT PRIMARY KEY,
+		freq INT NOT NULL
 	)`
 
 const file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
@@ -35,7 +36,7 @@ const file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 
 const new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?)`
 
-const new_tag = `INSERT INTO tags(name) VALUES(?)`
+const new_tag = `INSERT INTO tags(name, freq) VALUES(?, 1) ON CONFLICT(name) DO UPDATE SET freq = freq + 1`
 
 const new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
 
@@ -95,6 +96,7 @@ func delete_file(path string) {
 	delete_stmt.Exec(path)
 
 	tx.Commit()
+	update()
 }
 
 func get_count() int {
@@ -168,6 +170,7 @@ func insert_metadata(md5sum, path, ext string, tags []string) {
 	}
 
 	tx.Commit()
+	update()
 }
 
 func new_db() {
