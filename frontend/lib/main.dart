@@ -33,7 +33,6 @@ class UI extends StatelessWidget {
     return MaterialApp(
       title: 'test',
       theme: ThemeData(
-
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
       home: const SearchPage(title: 'Search Page'),
@@ -58,8 +57,36 @@ class DigitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: counter.split('').map((digit) =>
-        Image.asset('counters/$digit.png')).toList(),
+      children: counter
+          .split('')
+          .map((digit) => Image.asset('counters/$digit.png'))
+          .toList(),
+    );
+  }
+}
+
+class SearchBox extends StatelessWidget {
+  //String query;
+  final WebSocketChannel? _channel;
+
+  const SearchBox(this._channel, {super.key});
+
+  void _requestCounter() {
+    final message = {"test": "0"};
+    _channel?.sink.add(jsonEncode(message));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      decoration: InputDecoration(
+        border: OutlineInputBorder(),
+        hintText: 'Ex: blue_sky cloud 1girl',
+        suffix: IconButton(
+          icon: Icon(Icons.search),
+          onPressed: _requestCounter,
+        ),
+      ),
     );
   }
 }
@@ -69,9 +96,7 @@ class _SearchPageState extends State<SearchPage> {
   String _counter = "0";
 
   void _requestCounter() {
-    final message = {
-      'counter': _counter,
-    };
+    final message = {'counter': _counter};
     _channel?.sink.add(jsonEncode(message));
   }
 
@@ -84,11 +109,12 @@ class _SearchPageState extends State<SearchPage> {
   Future<void> _connect() async {
     try {
       _channel = WebSocketChannel.connect(
-        Uri.parse('ws://localhost:8080/ws'), // Use ws://10.0.2.2:8080/ws for Android emulator
+        Uri.parse(
+          'ws://localhost:8080/ws',
+        ), // Use ws://10.0.2.2:8080/ws for Android emulator
       );
       await _channel!.ready;
-    }
-    catch (e) {
+    } catch (e) {
       debugPrint('Failed to connect to WebSocket: $e');
       exit(1);
     }
@@ -142,12 +168,10 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text('File Number:'),
-            SizedBox(height: 10),
-            Container(
-              height: 150,
-              child: DigitRow(_counter.toString()),
-            ),
+            SizedBox(width: 550, child: SearchBox(_channel)),
+            SizedBox(height: 40),
+            SizedBox(height: 150, child: DigitRow(_counter.toString())),
+            SizedBox(height: 40),
           ],
         ),
       ),

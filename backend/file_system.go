@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -72,6 +73,8 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		info, err = os.Stat(real_path)
 		if err != nil {
 			if os.IsNotExist(err) {
+				fmt.Println("PATH DOES NOT EXIST:")
+				fmt.Println(real_path)
 				delete_file(real_path)
 				return -int(fuse.ENOENT)
 			}
@@ -114,7 +117,13 @@ func (self *KAIMEN_FS) Readdir(path string,
 	if path != "/search" {
 		nams = []string{".", "..", "search"}
 	} else {
-		nams = query()
+		for {
+			if pending_remove.IsEmpty() {
+				nams = query()
+				break
+			}
+			time.Sleep(time.Second)
+		}
 	}
 
 	nams = append([]string{".", ".."}, nams...)

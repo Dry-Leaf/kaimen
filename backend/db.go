@@ -2,13 +2,17 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-var db_uri string
-var db_path string
+var (
+	db_uri         string
+	db_path        string
+	insert_counter = 0
+)
 
 type MIRROR_FILE struct {
 	md5       string
@@ -16,47 +20,47 @@ type MIRROR_FILE struct {
 	file_path string
 }
 
-var insert_counter = 0
-
-const file_table = `CREATE TABLE IF NOT EXISTS files (
+const (
+	file_table = `CREATE TABLE IF NOT EXISTS files (
 		md5 TEXT PRIMARY KEY,
 		extension TEXT NOT NULL,
 		file_path TEXT NOT NULL
 	)`
-
-const tag_table = `CREATE TABLE IF NOT EXISTS tags (
+	tag_table = `CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
-		freq INT NOT NULL
+		freq INT NOT NULL,
+		category INT NOT NULL
 	)`
-
-const file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
+	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name)
 	)`
+	new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?)`
 
-const new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?)`
+	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0) ON CONFLICT(name) DO UPDATE SET freq = freq + 1 RETURNING freq`
 
-const new_tag = `INSERT INTO tags(name, freq) VALUES(?, 1) ON CONFLICT(name) DO UPDATE SET freq = freq + 1`
+	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
 
-const new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
+	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?`
 
-const image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?`
+	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?`
 
-const update_path = `UPDATE files SET file_path = ? WHERE md5 = ?`
+	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?`
 
-const query_images = `SELECT * FROM files`
+	query_images = `SELECT * FROM files`
 
-const deletion = `DELETE FROM files WHERE file_path = ?`
+	deletion = `DELETE FROM files WHERE file_path = ?`
 
-const optimize = `PRAGMA optimize`
+	optimize = `PRAGMA optimize`
 
-const file_index = `CREATE INDEX idx_files_md5 ON files (md5)`
+	file_index = `CREATE INDEX idx_files_md5 ON files (md5)`
 
-const file_tag_index = `CREATE INDEX idx_file_tags_md5_tag ON file_tags (md5, tag)`
+	file_tag_index = `CREATE INDEX idx_file_tags_md5_tag ON file_tags (md5, tag)`
 
-const file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5)`
+	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5)`
 
-const file_count = `SELECT COUNT(*) FROM files;`
+	file_count = `SELECT COUNT(*) FROM files;`
+)
 
 func dup_check(md5sum, path string) int {
 	conn, err := sql.Open("sqlite3", db_uri)
@@ -77,6 +81,7 @@ func dup_check(md5sum, path string) int {
 		update_path_stmt, err := tx.Prepare(update_path)
 		Err_check(err)
 		update_path_stmt.Exec(path, md5sum)
+		fmt.Print("MOVED " + rpath + "TO " + path)
 	}
 
 	tx.Commit()
@@ -155,7 +160,20 @@ func insert_metadata(md5sum, path, ext string, tags []string) {
 	Err_check(err)
 
 	for _, tag := range tags {
-		new_tag_stmt.Exec(tag)
+		row := new_tag_stmt.QueryRow(tag)
+
+		var freq int
+		err := row.Scan(&freq)
+		Err_check(err)
+
+		if freq == 1 {
+			cat := get_tag_cat(tag)
+			if cat != 0 {
+				update_tag_stmt, err := tx.Prepare(update_tag_cat)
+				Err_check(err)
+				update_tag_stmt.Exec(cat, tag)
+			}
+		}
 		new_relation_stmt.Exec(md5sum, tag)
 	}
 
