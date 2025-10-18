@@ -16,6 +16,11 @@ type SafeMap struct {
 	count atomic.Int64
 }
 
+type response struct {
+	Type  string `json:"category"`
+	Value string `json:"value"`
+}
+
 func (s *SafeMap) Store(key any) {
 	if _, loaded := s.data.LoadOrStore(key, struct{}{}); !loaded {
 		s.count.Add(1)
