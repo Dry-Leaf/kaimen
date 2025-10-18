@@ -38,7 +38,9 @@ func update() {
 
 	file_count := strconv.Itoa(get_count())
 
-	err := wsjson.Write(ctx, c, file_count)
+	resp := map[string]string{"count": file_count}
+
+	err := wsjson.Write(ctx, c, resp)
 	Err_check(err)
 }
 
@@ -68,9 +70,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 		file_count := strconv.Itoa(get_count())
 
+		resp := map[string]string{"count": file_count}
+
 		log.Printf("received: %v", v)
 
-		wsjson.Write(ctx, c, file_count)
+		wsjson.Write(ctx, c, resp)
 	}
 }
 

@@ -65,26 +65,40 @@ class DigitRow extends StatelessWidget {
   }
 }
 
-class SearchBox extends StatelessWidget {
-  //String query;
+class SearchBox extends StatefulWidget {
   final WebSocketChannel? _channel;
-
   const SearchBox(this._channel, {super.key});
 
-  void _requestCounter() {
-    final message = {"test": "0"};
-    _channel?.sink.add(jsonEncode(message));
+  @override
+  State<SearchBox> createState() => _SearchBox();
+}
+
+class _SearchBox extends State<SearchBox> {
+  final controller = TextEditingController();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  void _sendQuery() {
+    final message = {"Type": "query", "Value": controller.text};
+    widget._channel?.sink.add(jsonEncode(message));
   }
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      decoration: InputDecoration(
-        border: OutlineInputBorder(),
-        hintText: 'Ex: blue_sky cloud 1girl',
-        suffix: IconButton(
-          icon: Icon(Icons.search),
-          onPressed: _requestCounter,
+    return Focus(
+      onKeyEvent: (node, event) {
+        return KeyEventResult.ignored;
+      },
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          border: OutlineInputBorder(),
+          hintText: 'Ex: blue_sky cloud 1girl',
+          suffix: IconButton(icon: Icon(Icons.search), onPressed: _sendQuery),
         ),
       ),
     );
@@ -96,7 +110,7 @@ class _SearchPageState extends State<SearchPage> {
   String _counter = "0";
 
   void _requestCounter() {
-    final message = {'counter': _counter};
+    final message = {'Type': "counter"};
     _channel?.sink.add(jsonEncode(message));
   }
 
@@ -121,9 +135,9 @@ class _SearchPageState extends State<SearchPage> {
 
     _channel!.stream.listen(
       (data) {
-        String message = jsonDecode(data as String);
+        final message = jsonDecode(data);
         setState(() {
-          _counter = message;
+          _counter = message['count'];
         });
       },
       onError: (error) {
