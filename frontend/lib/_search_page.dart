@@ -1,6 +1,5 @@
 import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:flutter/material.dart';
-import 'dart:collection' show Queue;
 import 'dart:io' show exit;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
@@ -66,12 +65,6 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final counterGirls = Queue<Widget>();
-    final counter = _counter.toString().split('');
-    for (final digit in counter) {
-      counterGirls.addLast(Image(image: AssetImage('counters/${digit}.png')));
-    }
-
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
