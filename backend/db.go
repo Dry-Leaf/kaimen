@@ -60,6 +60,8 @@ const (
 	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5)`
 
 	file_count = `SELECT COUNT(*) FROM files;`
+
+	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' ORDER BY freq DESC LIMIT 10`
 )
 
 func dup_check(md5sum, path string) int {
