@@ -18,8 +18,7 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   WebSocketChannel? _channel;
   String _counter = "0";
-  ValueNotifier<List<Suggestion>> _suggestions =
-      ValueNotifier<List<Suggestion>>([]);
+  final _suggestions = ValueNotifier<List<Suggestion>>([]);
 
   void _requestCounter() {
     final message = {'Type': "counter"};
