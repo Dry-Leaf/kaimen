@@ -118,6 +118,33 @@ func get_count() int {
 	return result
 }
 
+type tag struct {
+	Name     string `json:"Name"`
+	Freq     int    `json:"Freq"`
+	Category int    `json:"Category"`
+}
+
+func get_suggestions(query string) []tag {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	rows, err := conn.Query(tag_query, query)
+	Err_check(err)
+
+	var result []tag
+
+	for rows.Next() {
+		var ctag tag
+		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
+
+		result = append(result, ctag)
+	}
+
+	fmt.Println(result)
+	return result
+}
+
 func query() []string {
 	var nams []string
 
