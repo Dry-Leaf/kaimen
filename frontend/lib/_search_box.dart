@@ -18,6 +18,57 @@ class Suggestion {
   }
 }
 
+class SuggestionList extends StatefulWidget {
+  final ValueNotifier<List<Suggestion>> _suggestions;
+  const SuggestionList(this._suggestions, {super.key});
+
+  @override
+  State<SuggestionList> createState() => _SuggestionList();
+}
+
+class _SuggestionList extends State<SuggestionList> {
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color backgroundColor = theme.colorScheme.background;
+
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        color: backgroundColor,
+        border: Border.all(color: theme.colorScheme.outline),
+      ),
+      child: ListView.builder(
+        physics: const ClampingScrollPhysics(),
+        itemCount: widget._suggestions.value.length,
+        itemBuilder: (BuildContext context, int index) {
+          final Color textColor;
+          switch (widget._suggestions.value[index].category) {
+            case 1:
+              textColor = Colors.red[700]!;
+            case 3:
+              textColor = Colors.purple;
+            case 4:
+              textColor = Colors.green[600]!;
+            case 5:
+              textColor = Colors.amber[800]!;
+            default:
+              textColor = Colors.blue[600]!;
+          }
+          return SizedBox(
+            height: 27,
+            child: Text(
+              widget._suggestions.value[index].name,
+              style: TextStyle(fontSize: 15, color: textColor),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class TextInput extends StatefulWidget {
   final WebSocketChannel? _channel;
   final ValueNotifier<List<Suggestion>> _suggestions;
@@ -90,7 +141,13 @@ class _TextInput extends State<TextInput> {
         child: CompositedTransformFollower(
           link: _link,
           targetAnchor: Alignment.bottomLeft,
-          child: const SizedBox(width: 550, height: 200, child: Placeholder()),
+          followerAnchor: Alignment.topLeft,
+          offset: const Offset(0, .5),
+          child: SizedBox(
+            width: 550,
+            height: widget._suggestions.value.length * 27 + 18,
+            child: SuggestionList(widget._suggestions),
+          ),
         ),
       ),
       child: CompositedTransformTarget(
