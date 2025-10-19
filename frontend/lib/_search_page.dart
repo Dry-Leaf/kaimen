@@ -99,7 +99,7 @@ class _SearchPageState extends State<SearchPage> {
             SizedBox(width: 550, child: SearchBox(_channel, _suggestions)),
             SizedBox(height: 40),
             SizedBox(height: 150, child: DigitRow(_counter.toString())),
-            SizedBox(height: 40),
+            SizedBox(height: 60),
           ],
         ),
       ),
