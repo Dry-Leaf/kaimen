@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:io' show exit;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '_search_box.dart' show SearchBox;
+import '_search_box.dart' show SearchBox, Suggestion;
 import '_digit_row.dart' show DigitRow;
 
 class SearchPage extends StatefulWidget {
@@ -18,6 +18,8 @@ class SearchPage extends StatefulWidget {
 class _SearchPageState extends State<SearchPage> {
   WebSocketChannel? _channel;
   String _counter = "0";
+  ValueNotifier<List<Suggestion>> _suggestions =
+      ValueNotifier<List<Suggestion>>([]);
 
   void _requestCounter() {
     final message = {'Type': "counter"};
@@ -42,9 +44,21 @@ class _SearchPageState extends State<SearchPage> {
     _channel!.stream.listen(
       (data) {
         final message = jsonDecode(data);
-        setState(() {
-          _counter = message['count'];
-        });
+        switch (message['Type']) {
+          case 'counter':
+            setState(() {
+              _counter = message['Value'];
+            });
+          case 'autosuggest':
+            if (message['Value'] != null) {
+              final suggestions = (message['Value'] as List)
+                  .map((e) => Suggestion.fromJson(e as Map<String, dynamic>))
+                  .toList();
+              _suggestions.value = suggestions;
+            } else {
+              _suggestions.value = [];
+            }
+        }
       },
       onError: (error) {
         setState(() {
@@ -82,7 +96,7 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            SizedBox(width: 550, child: SearchBox(_channel)),
+            SizedBox(width: 550, child: SearchBox(_channel, _suggestions)),
             SizedBox(height: 40),
             SizedBox(height: 150, child: DigitRow(_counter.toString())),
             SizedBox(height: 40),

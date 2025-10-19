@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -12,10 +13,16 @@ import (
 	"github.com/coder/websocket/wsjson"
 )
 
-// Message struct for JSON
-type Message struct {
-	Counter int    `json:"counter"`
-	User    string `json:"user"`
+var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
+
+type request struct {
+	Type  string `json:"Type"`
+	Value string `json:"Value"`
+}
+
+type response struct {
+	Type  string `json:"Type"`
+	Value any    `json:"Value"`
 }
 
 var (
@@ -56,8 +63,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	for {
 		ctx := context.Background()
 
-		var v any
-		err = wsjson.Read(ctx, c, &v)
+		var req request
+		err = wsjson.Read(ctx, c, &req)
 		if err != nil {
 			log.Println("No active client connected")
 			connMu.Lock()
@@ -68,13 +75,24 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		file_count := strconv.Itoa(get_count())
+		switch req.Type {
+		case "counter":
+			file_count := strconv.Itoa(get_count())
+			resp := response{Type: "counter", Value: file_count}
+			wsjson.Write(ctx, c, resp)
+		case "auto_suggest":
+			lw := last_word_reg.FindString(req.Value)
 
-		resp := map[string]string{"count": file_count}
+			var results []tag
+			if lw != "" {
+				results = get_suggestions(lw)
+			}
+			resp := response{Type: "autosuggest", Value: results}
 
-		log.Printf("received: %v", v)
+			wsjson.Write(ctx, c, resp)
 
-		wsjson.Write(ctx, c, resp)
+		}
+
 	}
 }
 
