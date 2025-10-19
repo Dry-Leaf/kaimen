@@ -1,6 +1,7 @@
 import 'dart:convert' show jsonEncode;
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class Suggestion {
   final String name;
@@ -27,10 +28,15 @@ class SuggestionList extends StatefulWidget {
 }
 
 class _SuggestionList extends State<SuggestionList> {
+  String formatNumber(int number) {
+    final formatter = NumberFormat.compact(locale: 'en_US');
+    return formatter.format(number);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color backgroundColor = theme.colorScheme.background;
+    final Color backgroundColor = theme.colorScheme.surface;
 
     return Container(
       padding: const EdgeInsets.all(8.0),
@@ -56,12 +62,30 @@ class _SuggestionList extends State<SuggestionList> {
             default:
               textColor = Colors.blue[600]!;
           }
-          return SizedBox(
-            height: 27,
-            child: Text(
-              widget._suggestions.value[index].name,
-              style: TextStyle(fontSize: 15, color: textColor),
-            ),
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              SizedBox(
+                height: 27,
+                child: Text(
+                  widget._suggestions.value[index].name,
+                  style: TextStyle(fontSize: 15, color: textColor),
+                ),
+              ),
+              SizedBox(
+                height: 27,
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                  child: Text(
+                    formatNumber(widget._suggestions.value[index].freq),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: theme.colorScheme.outline,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),

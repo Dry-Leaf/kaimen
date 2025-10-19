@@ -39,6 +39,8 @@ dependencies:
 
   web_socket_channel: ^3.0.3
 
+  intl: ^0.20.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
