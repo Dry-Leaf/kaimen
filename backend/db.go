@@ -119,9 +119,10 @@ func get_count() int {
 }
 
 type tag struct {
-	Name     string `json:"Name"`
-	Freq     int    `json:"Freq"`
-	Category int    `json:"Category"`
+	Name      string `json:"Name"`
+	Freq      int    `json:"Freq"`
+	Category  int    `json:"Category"`
+	Remainder string `json:"Remainder"`
 }
 
 func get_suggestions(query string) []tag {
@@ -137,6 +138,9 @@ func get_suggestions(query string) []tag {
 	for rows.Next() {
 		var ctag tag
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
+
+		rem := ctag.Name[len(query):]
+		ctag.Remainder = rem
 
 		result = append(result, ctag)
 	}
