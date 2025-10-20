@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'dart:io' show exit;
 import 'package:web_socket_channel/web_socket_channel.dart';
 
-import '_search_box.dart' show SearchBox, Suggestion;
+import '_search_box.dart' show SearchBox;
+import '_suggestions.dart' show Suggestion;
 import '_digit_row.dart' show DigitRow;
 
 class SearchPage extends StatefulWidget {
