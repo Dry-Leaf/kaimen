@@ -50,11 +50,15 @@ class _SuggestionList extends State<SuggestionList> {
   @override
   void initState() {
     super.initState();
-    widget._suggestionsFocusNode.addListener(_initialFocus);
+    widget._suggestionsFocusNode.addListener(_handleFocus);
   }
 
-  void _initialFocus() {
-    _highlightIndex = 0;
+  void _handleFocus() {
+    if (widget._suggestionsFocusNode.hasFocus) {
+      _highlightIndex = 0;
+    } else {
+      _highlightIndex = -1;
+    }
   }
 
   void _returnFocus(int index) {
@@ -87,7 +91,9 @@ class _SuggestionList extends State<SuggestionList> {
   }
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
     final suggestions = widget._suggestions.value;
     if (suggestions.isEmpty) return KeyEventResult.ignored;
 
@@ -105,14 +111,33 @@ class _SuggestionList extends State<SuggestionList> {
               (_highlightIndex - 1 + suggestions.length) % suggestions.length;
         });
         return KeyEventResult.handled;
+      case LogicalKeyboardKey.tab:
       case LogicalKeyboardKey.enter:
         _returnFocus(_highlightIndex);
         return KeyEventResult.handled;
       case LogicalKeyboardKey.escape:
         node.unfocus();
         return KeyEventResult.handled;
+      case LogicalKeyboardKey.backspace:
+        String newtxt = widget._textController.text.substring(
+          0,
+          widget._textController.text.length - 1,
+        );
+        widget._textController.text = newtxt;
+        widget._textFieldFocusNode.requestFocus();
+        return KeyEventResult.handled;
       default:
-        return KeyEventResult.ignored;
+        if (event.character != null && event.character!.isNotEmpty) {
+          widget._textController.text += event.character!;
+          widget._textController.selection = TextSelection.collapsed(
+            offset: widget._textController.text.length,
+          );
+        }
+        widget._textFieldFocusNode.requestFocus();
+        setState(() {
+          _highlightIndex = 0;
+        });
+        return KeyEventResult.handled;
     }
   }
 
@@ -345,11 +370,6 @@ class _SearchBox extends State<SearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return Focus(
-      onKeyEvent: (node, event) {
-        return KeyEventResult.ignored;
-      },
-      child: TextInput(widget._channel, widget._suggestions),
-    );
+    return TextInput(widget._channel, widget._suggestions);
   }
 }
