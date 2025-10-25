@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -81,7 +83,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			resp := response{Type: "counter", Value: file_count}
 			wsjson.Write(ctx, c, resp)
 		case "auto_suggest":
-			lw := last_word_reg.FindString(req.Value)
+			lw := strings.TrimLeft(last_word_reg.FindString(req.Value), "-")
 
 			var results []tag
 			if lw != "" {
@@ -90,7 +92,16 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			resp := response{Type: "autosuggest", Value: results}
 
 			wsjson.Write(ctx, c, resp)
+		case "query":
+			if len(req.Value) == 0 {
+				fmt.Print("recent instead")
+				nams = append([]string{".", ".."}, query_recent()...)
+			} else {
+				nams = append([]string{".", ".."}, query(req.Value)...)
+			}
 
+			resp := response{Type: "qcomplete", Value: len(nams) - 2}
+			wsjson.Write(ctx, c, resp)
 		}
 
 	}

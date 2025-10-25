@@ -28,10 +28,11 @@ func main() {
 		new_db()
 	}
 
-	//must be passed an absolute path
-	filepath.WalkDir(`C:\Users\nobody\Documents\code\compiled\go\kaimen\backend\test_images`, initial_crawl)
-
-	//file_count := get_count()
+	go func() {
+		nams = append([]string{".", ".."}, query_recent()...)
+		//must be passed an absolute path
+		filepath.WalkDir(`C:\Users\nobody\Documents\code\compiled\go\kaimen\backend\test_images`, initial_crawl)
+	}()
 	go dir_watch()
 	go dequeue()
 	go server()

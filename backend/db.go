@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -47,7 +48,7 @@ const (
 
 	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?`
 
-	query_images = `SELECT * FROM files`
+	query_recent_images = `SELECT * FROM files LIMIT 50`
 
 	deletion = `DELETE FROM files WHERE file_path = ?`
 
@@ -59,9 +60,27 @@ const (
 
 	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5)`
 
+	tag_index = `CREATE INDEX idx_tags_name_freq ON tags(name ASC, freq DESC)`
+
 	file_count = `SELECT COUNT(*) FROM files;`
 
 	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' ORDER BY freq DESC LIMIT 10`
+
+	query_head = `SELECT f.* FROM files f `
+
+	query_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag = "%s" `
+
+	query_exclude = `LEFT JOIN file_tags fe%[1]d ON fe%[1]d.md5 = f.md5 AND fe%[1]d.tag = "%s" `
+
+	// need this where clause for exluclusion
+	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
+	//
+	// SELECT f.file_path FROM files f
+	// JOIN file_tags ft1 ON ft1.md5 = f.md5 AND ft1.tag = 'include_tag1'
+	// JOIN file_tags ft2 ON ft2.md5 = f.md5 AND ft2.tag = 'include_tag2'
+	// LEFT JOIN file_tags fe1 ON fe1.md5 = f.md5 AND fe1.tag = 'exclude_tag1'
+	// LEFT JOIN file_tags fe2 ON fe2.md5 = f.md5 AND fe2.tag = 'exclude_tag2'
+	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
 )
 
 func dup_check(md5sum, path string) int {
@@ -145,18 +164,60 @@ func get_suggestions(query string) []tag {
 		result = append(result, ctag)
 	}
 
-	fmt.Println(result)
 	return result
 }
 
-func query() []string {
+func query(q_string string) []string {
+	var nams []string
+
+	tags := strings.Split(q_string, " ")
+
+	fmt.Print(tags)
+	fmt.Print(len(tags))
+
+	fquery := query_head
+
+	for i, tag := range tags {
+		if len(tag) > 1 {
+			cq := fmt.Sprintf(query_include, i, tag)
+			fquery += cq
+		}
+	}
+
+	fmt.Print(fquery)
+
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	file_rows, err := conn.Query(fquery)
+	if err != sql.ErrNoRows {
+		Err_check(err)
+	}
+
+	for file_rows.Next() {
+		var cmirror MIRROR_FILE
+		err = file_rows.Scan(&cmirror.md5, &cmirror.extension, &cmirror.file_path)
+		Err_check(err)
+
+		result_map[cmirror.md5+cmirror.extension] = cmirror.file_path
+
+		nams = append(nams, cmirror.md5+cmirror.extension)
+	}
+
+	fmt.Println(nams)
+
+	return nams
+}
+
+func query_recent() []string {
 	var nams []string
 
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
 
-	file_rows, err := conn.Query(query_images)
+	file_rows, err := conn.Query(query_recent_images)
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
@@ -238,7 +299,7 @@ func new_db() {
 	defer tx.Rollback()
 
 	for _, stmt := range []string{file_table, tag_table, file_tag_table,
-		file_index, file_tag_index, file_tag_rindex} {
+		file_index, file_tag_index, file_tag_rindex, tag_index} {
 		statement, err := tx.Prepare(stmt)
 		Err_check(err)
 		statement.Exec()

@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -13,6 +12,8 @@ import (
 const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 
 var result_map = make(map[string]string)
+var nams []string
+var search_nam = []string{".", "..", "search"}
 
 type KAIMEN_FS struct {
 	fuse.FileSystemBase
@@ -112,26 +113,28 @@ func (self *KAIMEN_FS) Readdir(path string,
 	ofst int64,
 	fh uint64) (errc int) {
 
-	var nams []string
+	var namp *[]string
 
 	if path != "/search" {
-		nams = []string{".", "..", "search"}
+		namp = &search_nam
 	} else {
-		for {
-			if pending_remove.IsEmpty() {
-				nams = query()
-				break
-			}
-			time.Sleep(time.Second)
-		}
+		namp = &nams
+		// if len(nams) > 0 {
+
+		// }
+		// for {
+		// 	if pending_remove.IsEmpty() {
+		// 		cnams = query_recent()
+		// 		break
+		// 	}
+		// 	time.Sleep(time.Second)
+		// }
 	}
 
-	nams = append([]string{".", ".."}, nams...)
-	for _, name := range nams {
+	// cnams = append([]string{".", ".."}, cnams...)
+	for _, name := range *namp {
 		fill(name, nil, 0)
 	}
-
-	fmt.Println(nams)
 
 	return 0
 }
