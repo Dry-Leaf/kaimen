@@ -83,17 +83,21 @@ class _TextInput extends State<TextInput> {
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyDownEvent) {
-      if (_textFieldFocusNode.hasFocus &&
-          widget._suggestions.value.isNotEmpty) {
-        if (event.logicalKey == LogicalKeyboardKey.tab) {
+      if (_textFieldFocusNode.hasFocus) {
+        if (event.logicalKey == LogicalKeyboardKey.tab &&
+            widget._suggestions.value.isNotEmpty) {
           _textController.text += '${widget._suggestions.value[0].remainder} ';
           _textController.selection = TextSelection.collapsed(
             offset: _textController.text.length,
           );
           return KeyEventResult.handled;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+            widget._suggestions.value.isNotEmpty) {
           _suggestionsFocusNode.requestFocus();
           return KeyEventResult.handled;
+        } else if (_textFieldFocusNode.hasFocus &&
+            event.logicalKey == LogicalKeyboardKey.enter) {
+          _sendQuery();
         }
       }
     }
