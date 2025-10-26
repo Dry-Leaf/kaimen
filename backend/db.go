@@ -70,9 +70,13 @@ const (
 
 	query_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag = "%s" `
 
+	query_fuzzy_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag LIKE "%s" `
+
 	query_exclude = `LEFT JOIN file_tags fe%[1]d ON fe%[1]d.md5 = f.md5 AND fe%[1]d.tag = "%s" `
 
 	query_exclude_where = `fe%d.md5 IS NULL `
+
+	query_tail = `GROUP BY f.md5`
 
 	// need this where clause for exluclusion
 	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
@@ -189,7 +193,11 @@ func query(q_string string) []string {
 				exlude_where = append(exlude_where,
 					fmt.Sprintf(query_exclude_where, i))
 			} else {
-				cq = fmt.Sprintf(query_include, i, tag)
+				cquery := query_include
+				if strings.Contains(tag, "%") {
+					cquery = query_fuzzy_include
+				}
+				cq = fmt.Sprintf(cquery, i, tag)
 			}
 			fquery += cq
 		}
@@ -211,7 +219,7 @@ func query(q_string string) []string {
 	Err_check(err)
 	defer conn.Close()
 
-	file_rows, err := conn.Query(fquery)
+	file_rows, err := conn.Query(fquery + query_tail)
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
