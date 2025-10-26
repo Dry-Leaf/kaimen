@@ -1,8 +1,8 @@
 # Advantages over Hydrus Network
-- Minimal setup.
-- Familiar UI.
-- Works with file managers.
-- Does not require its own copy of files.
+- Minimal setup
+- Familiar UI
+- Works with file managers
+- Does not require its own copy of files
 
 # Building
 
