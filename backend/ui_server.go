@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -47,7 +46,7 @@ func update() {
 
 	file_count := strconv.Itoa(get_count())
 
-	resp := map[string]string{"count": file_count}
+	resp := response{Type: "counter", Value: file_count}
 
 	err := wsjson.Write(ctx, c, resp)
 	Err_check(err)
@@ -93,11 +92,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			wsjson.Write(ctx, c, resp)
 		case "query":
-			if len(req.Value) == 0 {
-				fmt.Print("recent instead")
-				nams = append([]string{".", ".."}, query_recent()...)
-			} else {
+			if len(req.Value) > 0 {
 				nams = append([]string{".", ".."}, query(req.Value)...)
+				empty_query = false
+			} else {
+				empty_query = true
 			}
 
 			resp := response{Type: "qcomplete", Value: len(nams) - 2}
