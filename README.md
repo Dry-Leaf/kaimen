@@ -1,3 +1,11 @@
+# Advantages over Hydrus Network
+- Minimal setup.
+- Familiar UI.
+- Works with file managers.
+- Does not require its own copy of files.
+
+# Building
+
 Linux, requires libfuse-dev
 
 Windows requires WinFsp
