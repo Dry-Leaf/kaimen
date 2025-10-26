@@ -72,6 +72,8 @@ const (
 
 	query_exclude = `LEFT JOIN file_tags fe%[1]d ON fe%[1]d.md5 = f.md5 AND fe%[1]d.tag = "%s" `
 
+	query_exclude_where = `fe%d.md5 IS NULL `
+
 	// need this where clause for exluclusion
 	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
 	//
@@ -177,10 +179,29 @@ func query(q_string string) []string {
 
 	fquery := query_head
 
+	var exlude_where []string
+
 	for i, tag := range tags {
 		if len(tag) > 1 {
-			cq := fmt.Sprintf(query_include, i, tag)
+			var cq string
+			if ctag, found := strings.CutPrefix(tag, "-"); found {
+				cq = fmt.Sprintf(query_exclude, i, ctag)
+				exlude_where = append(exlude_where,
+					fmt.Sprintf(query_exclude_where, i))
+			} else {
+				cq = fmt.Sprintf(query_include, i, tag)
+			}
 			fquery += cq
+		}
+	}
+
+	if len(exlude_where) > 0 {
+		fquery += `WHERE `
+		for i, clause := range exlude_where {
+			if i > 0 {
+				fquery += `AND `
+			}
+			fquery += clause
 		}
 	}
 
