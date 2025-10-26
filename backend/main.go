@@ -29,7 +29,6 @@ func main() {
 	}
 
 	go func() {
-		nams = append([]string{".", ".."}, query_recent()...)
 		//must be passed an absolute path
 		filepath.WalkDir(`C:\Users\nobody\Documents\code\compiled\go\kaimen\backend\test_images`, initial_crawl)
 	}()

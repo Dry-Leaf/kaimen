@@ -36,7 +36,9 @@ func initial_crawl(path string, d fs.DirEntry, err error) error {
 
 	if !d.IsDir() {
 		mtype, err := mimetype.DetectFile(path)
-		Err_check(err)
+		if err != nil {
+			return nil
+		}
 
 		if slices.Contains(supported[:], mtype.String()) {
 			process(path, mtype.Extension())
@@ -77,7 +79,6 @@ func process(path, ext string) {
 		Err_check(err)
 
 		if match {
-			fmt.Println("MATCH")
 			md5sum = fnstem
 		}
 	}
