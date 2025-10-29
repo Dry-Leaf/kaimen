@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '_search_page.dart' show SearchPage;
+import '_settings_page.dart' show SettingsPage;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +34,11 @@ class UI extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const SearchPage(title: 'Search Page'),
+      initialRoute: '/second',
+      routes: {
+        '/': (context) => const SearchPage(title: 'Search Page'),
+        '/second': (context) => const SettingsPage(),
+      },
     );
   }
 }
