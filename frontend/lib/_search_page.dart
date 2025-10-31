@@ -2,6 +2,7 @@ import 'dart:convert' show jsonDecode, jsonEncode;
 import 'package:flutter/material.dart';
 import 'dart:io' show exit;
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:provider/provider.dart';
 
 import '_search_box.dart' show SearchBox;
 import '_suggestions.dart' show Suggestion;
@@ -34,7 +35,11 @@ class _SearchPageState extends State<SearchPage> {
 
   Future<void> _connect() async {
     try {
-      _channel = WebSocketChannel.connect(Uri.parse('ws://localhost:8080/ws'));
+      final config = Provider.of<Map<String, dynamic>>(context, listen: false);
+      final socketPort = config['WEB_SOCKET_PORT'];
+      _channel = WebSocketChannel.connect(
+        Uri.parse('ws://localhost:$socketPort/ws'),
+      );
       await _channel!.ready;
     } catch (e) {
       debugPrint('Failed to connect to WebSocket: $e');

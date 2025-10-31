@@ -1,13 +1,22 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 
 	"github.com/BurntSushi/toml"
 	"github.com/joho/godotenv"
 )
+
+type Config struct {
+	Boards        []*SOURCE `toml:"boards"`
+	Dirs          []string  `toml:"DIRS"`
+	WebSocketPort string    `toml:"WEB_SOCKET_PORT"`
+}
 
 type SOURCE struct {
 	NAME       string
@@ -17,17 +26,43 @@ type SOURCE struct {
 	TAG_REGEX  *regexp.Regexp
 }
 
+//go:embed config.toml
+var embedFS embed.FS
+
 var Sources []*SOURCE
+var Web_socket_port string
 
-func Read_conf() {
-	tmp := make(map[string][]*SOURCE)
+func Read_conf() []string {
+	var conf Config
 
-	_, err := toml.DecodeFile("config.toml", &tmp)
+	fmt.Println("1")
+	conf_dir, err := os.UserConfigDir()
+	Err_check(err)
+	conf_path := filepath.Join(conf_dir, "kaimen", "config.toml")
+
+	os.MkdirAll(filepath.Join(conf_dir, "kaimen"), 0755)
+	f, err := os.Create(conf_path)
+
+	if err == nil {
+		fmt.Println("2")
+		default_conf, err := embedFS.ReadFile("config.toml")
+		Err_check(err)
+
+		_, err = f.Write(default_conf)
+	} else {
+		if !os.IsExist(err) {
+			log.Fatal(err)
+		}
+	}
+	f.Close()
+	fmt.Println("3")
+	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
-	Sources = tmp["boards"]
+	Sources = conf.Boards
+	Web_socket_port = conf.WebSocketPort
 
-	err = godotenv.Load()
+	err = godotenv.Load(".env")
 	Err_check(err)
 
 	for _, booru := range Sources {
@@ -43,6 +78,17 @@ func Read_conf() {
 			}
 		}
 	}
+
+	home_dir, err := os.UserHomeDir()
+	Err_check(err)
+
+	var dirs []string
+
+	for _, dir := range conf.Dirs {
+		dirs = append(dirs, filepath.Join(home_dir, dir))
+	}
+
+	return dirs
 
 	// for _, booru := range Sources {
 	// 	fmt.Println(*booru)

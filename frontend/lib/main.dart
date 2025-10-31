@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:toml/toml.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:path/path.dart' as path;
 
 import '_search_page.dart' show SearchPage;
 import '_settings_page.dart' show SettingsPage;
 
 void main() async {
+  final directory = await getApplicationSupportDirectory();
+  final confLocation = path.join(directory.path, 'config.toml');
+  final document = await TomlDocument.load(confLocation);
+  final config = document.toMap();
+
+  debugPrint(config.toString());
+
   WidgetsFlutterBinding.ensureInitialized();
   // Must add this line.
   await windowManager.ensureInitialized();
@@ -21,7 +32,7 @@ void main() async {
     await windowManager.focus();
   });
 
-  runApp(const UI());
+  runApp(Provider.value(value: config, child: const UI()));
 }
 
 class UI extends StatelessWidget {

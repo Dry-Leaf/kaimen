@@ -1,8 +1,11 @@
-# Tag Injector Configuration
+# Kaimen Configuration
 
-# Add account details to api_urls if need be
+WEB_SOCKET_PORT= '49152'
 
+# Comma seperated directories to index
+DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\code\compiled\go\kaimen\backend\test_images2' ]
 
+# Add account credentials if need be (ToDo: document this)
 [[boards]]
 
     name = 'GELBOORU'

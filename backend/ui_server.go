@@ -108,6 +108,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 func server() {
 	http.HandleFunc("/", handle)
-	err := http.ListenAndServe("localhost:8080", nil)
+	err := http.ListenAndServe("localhost:"+Web_socket_port, nil)
 	log.Fatal(err)
 }
