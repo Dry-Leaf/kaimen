@@ -141,8 +141,6 @@ func get_tags(md5sum string) []string {
 		url := booru.URL + md5sum
 		if booru.API_PARAMS != "" {
 			url += booru.API_PARAMS
-		} else {
-			fmt.Println(*booru)
 		}
 
 		fmt.Println(url)
