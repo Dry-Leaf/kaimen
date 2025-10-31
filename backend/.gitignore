@@ -1,4 +1,4 @@
-test_images*
+test_images*/*
 test/
 *.exe
 *.env
