@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -81,11 +82,11 @@ func dequeue() {
 	}
 }
 
-func dir_watch() {
+func dir_watch(dir string) {
 	c := make(chan notify.EventInfo, 200)
 
 	//maybe delete events could be recorded, if they were kept at the bottom of the queue somehow
-	err := notify.Watch("test_images/...", c, notify.Create, notify.Remove)
+	err := notify.Watch(filepath.Join(dir, "/..."), c, notify.Create, notify.Remove)
 	Err_check(err)
 
 	defer notify.Stop(c)
