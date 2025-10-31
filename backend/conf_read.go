@@ -13,6 +13,7 @@ type SOURCE struct {
 	NAME       string
 	URL        string
 	API_PARAMS string
+	TAG_KEY    string
 	TAG_REGEX  *regexp.Regexp
 }
 
@@ -30,9 +31,11 @@ func Read_conf() {
 	Err_check(err)
 
 	for _, booru := range Sources {
+		booru.TAG_REGEX = regexp.MustCompile(`"` + booru.TAG_KEY + `":"([^"]*)?`)
 		if booru.API_PARAMS != "" {
 			login := os.Getenv(booru.NAME + "_LOGIN")
 			api_key := os.Getenv(booru.NAME + "_API_KEY")
+
 			if login == "" || api_key == "" {
 				booru.API_PARAMS = ""
 			} else {
@@ -41,7 +44,7 @@ func Read_conf() {
 		}
 	}
 
-	for _, booru := range Sources {
-		fmt.Println(*booru)
-	}
+	// for _, booru := range Sources {
+	// 	fmt.Println(*booru)
+	// }
 }
