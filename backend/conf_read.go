@@ -35,16 +35,14 @@ var Web_socket_port string
 func Read_conf() []string {
 	var conf Config
 
-	fmt.Println("1")
 	conf_dir, err := os.UserConfigDir()
 	Err_check(err)
 	conf_path := filepath.Join(conf_dir, "kaimen", "config.toml")
 
 	os.MkdirAll(filepath.Join(conf_dir, "kaimen"), 0755)
-	f, err := os.Create(conf_path)
+	f, err := os.OpenFile(conf_path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
 
 	if err == nil {
-		fmt.Println("2")
 		default_conf, err := embedFS.ReadFile("config.toml")
 		Err_check(err)
 
@@ -55,7 +53,7 @@ func Read_conf() []string {
 		}
 	}
 	f.Close()
-	fmt.Println("3")
+
 	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
