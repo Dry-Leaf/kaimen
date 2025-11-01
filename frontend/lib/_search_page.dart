@@ -109,9 +109,11 @@ class _SearchPageState extends State<SearchPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _requestCounter,
-        tooltip: 'Sync',
-        child: const Icon(Icons.sync),
+        onPressed: () {
+          Navigator.pushNamed(context, '/settings');
+        },
+        tooltip: 'Settings',
+        child: const Icon(Icons.settings),
       ),
     );
   }

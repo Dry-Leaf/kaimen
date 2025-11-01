@@ -45,10 +45,10 @@ class UI extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      initialRoute: '/second',
+      initialRoute: '/settings',
       routes: {
         '/': (context) => const SearchPage(title: 'Search Page'),
-        '/second': (context) => const SettingsPage(),
+        '/settings': (context) => SettingsPage(),
       },
     );
   }

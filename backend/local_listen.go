@@ -73,7 +73,10 @@ func dequeue() {
 				fmt.Println("from remove queue")
 				fmt.Println(path)
 				writeMu.Lock()
-				delete_file(path)
+				_, err := os.Stat(path)
+				if err != nil {
+					delete_file(path)
+				}
 				pending_remove.Delete(path)
 				writeMu.Unlock()
 				return true

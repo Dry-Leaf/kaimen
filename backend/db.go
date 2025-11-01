@@ -26,45 +26,55 @@ const (
 		md5 TEXT PRIMARY KEY,
 		extension TEXT NOT NULL,
 		file_path TEXT NOT NULL
-	)`
+	);`
 	tag_table = `CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
 		freq INT NOT NULL,
 		category INT NOT NULL
-	)`
+	);`
 	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name)
-	)`
-	new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?)`
+	);`
+	new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?);`
 
-	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0) ON CONFLICT(name) DO UPDATE SET freq = freq + 1 RETURNING freq`
+	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
+		ON CONFLICT(name)
+		DO UPDATE SET freq = freq + 1 RETURNING freq;`
 
-	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)`
+	tag_decrement = `CREATE TRIGGER tag_decrement
+		AFTER DELETE ON file_tags
+		BEGIN
+			UPDATE tags
+			SET freq = freq - 1
+			WHERE name = OLD.tag;
+		END;`
 
-	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?`
+	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?);`
 
-	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?`
+	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
 
-	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?`
+	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?;`
 
-	query_recent_images = `SELECT * FROM files LIMIT 50`
+	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?;`
 
-	deletion = `DELETE FROM files WHERE file_path = ?`
+	query_recent_images = `SELECT * FROM files LIMIT 50;`
 
-	optimize = `PRAGMA optimize`
+	deletion = `DELETE FROM files WHERE file_path = ?;`
 
-	file_index = `CREATE INDEX idx_files_md5 ON files (md5)`
+	optimize = `PRAGMA optimize;`
 
-	file_tag_index = `CREATE INDEX idx_file_tags_md5_tag ON file_tags (md5, tag)`
+	file_index = `CREATE INDEX idx_files_md5 ON files (md5);`
 
-	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5)`
+	file_tag_index = `CREATE INDEX idx_file_tags_md5_tag ON file_tags (md5, tag);`
 
-	tag_index = `CREATE INDEX idx_tags_name_freq ON tags(name ASC, freq DESC)`
+	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5);`
+
+	tag_index = `CREATE INDEX idx_tags_name_freq ON tags(name ASC, freq DESC);`
 
 	file_count = `SELECT COUNT(*) FROM files;`
 
-	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' ORDER BY freq DESC LIMIT 10`
+	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT 10;`
 
 	query_head = `SELECT f.* FROM files f `
 
@@ -76,7 +86,7 @@ const (
 
 	query_exclude_where = `fe%d.md5 IS NULL `
 
-	query_tail = `GROUP BY f.md5`
+	query_tail = `GROUP BY f.md5;`
 
 	// need this where clause for exluclusion
 	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
