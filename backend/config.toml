@@ -8,7 +8,7 @@ DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\cod
 # Add account credentials if need be (ToDo: document this)
 [[boards]]
 
-    name = 'GELBOORU'
+    name = 'Gelbooru'
 
     url = 'https://gelbooru.com/index.php?json=1&limit=1&page=dapi&s=post&q=index&tags=md5%3A'
 
@@ -19,7 +19,7 @@ DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\cod
 
 [[boards]]
 
-    name = 'DANBOORU'
+    name = 'Danbooru'
 
     url = 'https://danbooru.donmai.us/posts.json?limit=1&tags=md5%3A'
 
@@ -30,7 +30,7 @@ DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\cod
 
 [[boards]]
 
-    name = 'YANDERE'
+    name = 'Yandere'
 
     url = 'https://yande.re/post.json?limit=1&tags=md5%3A'
 

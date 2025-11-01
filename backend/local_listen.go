@@ -75,7 +75,11 @@ func dequeue() {
 				writeMu.Lock()
 				_, err := os.Stat(path)
 				if err != nil {
-					delete_file(path)
+					if os.IsNotExist(err) {
+						delete_file(path)
+					} else {
+						Err_check(err)
+					}
 				}
 				pending_remove.Delete(path)
 				writeMu.Unlock()

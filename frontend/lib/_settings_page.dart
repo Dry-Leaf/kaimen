@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/foundation.dart';
 
 class MiscTab extends StatefulWidget {
   const MiscTab({super.key});
@@ -64,9 +63,7 @@ class _MiscTabState extends State<MiscTab> {
 /// Screen that shows an example of getDirectoryPath
 class DirectoryTab extends StatelessWidget {
   /// Default Constructor
-  DirectoryTab({super.key});
-
-  final bool _isIOS = !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+  const DirectoryTab({super.key});
 
   Future<void> _getDirectoryPath(BuildContext context) async {
     const String confirmButtonText = 'Choose';
@@ -87,23 +84,17 @@ class DirectoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    //final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: _isIOS ? null : () => _getDirectoryPath(context),
-              child: const Text('Press to ask user to choose a directory.'),
-            ),
-          ],
-        ),
+      body: Center(child: Text('Please add a directory to index.')),
+
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _getDirectoryPath(context);
+        },
+        tooltip: 'Add Directory',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -148,8 +139,24 @@ class _SourcesTabState extends State<SourcesTab> {
           color: itemColor,
           child: SizedBox(
             height: 60,
-            width: 400,
-            child: Center(child: Text('${boards[index]["name"]}')),
+            width: 300,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text('${boards[index]["name"]}'),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    showDialog<void>(
+                      context: context,
+                      builder: (BuildContext context) =>
+                          TextDisplay('${boards[index]["url"]}'),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
     ];
@@ -169,7 +176,7 @@ class _SourcesTabState extends State<SourcesTab> {
           return Transform.scale(
             scale: scale,
             child: SizedBox(
-              width: 400, // Keep the width same as original cards
+              width: 300, // Keep the width same as original cards
               child:
                   child, // Use the passed-in child widget directly, NOT cards[index]
             ),
@@ -179,23 +186,32 @@ class _SourcesTabState extends State<SourcesTab> {
       );
     }
 
-    return Center(
-      child: SizedBox(
-        width: 400, // This sets the overall width of the list area to 400px
-        child: ReorderableListView(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          proxyDecorator: proxyDecorator,
-          onReorder: (int oldIndex, int newIndex) {
-            setState(() {
-              if (oldIndex < newIndex) {
-                newIndex -= 1;
-              }
-              final item = boards.removeAt(oldIndex);
-              boards.insert(newIndex, item);
-            });
-          },
-          children: cards,
+    return Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 300, // This sets the overall width of the list area to 400px
+          child: ReorderableListView(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            proxyDecorator: proxyDecorator,
+            onReorder: (int oldIndex, int newIndex) {
+              setState(() {
+                if (oldIndex < newIndex) {
+                  newIndex -= 1;
+                }
+                final item = boards.removeAt(oldIndex);
+                boards.insert(newIndex, item);
+              });
+            },
+            children: cards,
+          ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          debugPrint("WIP");
+        },
+        tooltip: 'Add Source',
+        child: const Icon(Icons.add),
       ),
     );
   }
