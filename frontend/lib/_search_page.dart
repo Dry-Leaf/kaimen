@@ -18,35 +18,24 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  WebSocketChannel? _channel;
+  late WebSocketChannel? channel;
   String _counter = "0";
   final _suggestions = ValueNotifier<List<Suggestion>>([]);
 
   void _requestCounter() {
     final message = {'Type': "counter"};
-    _channel?.sink.add(jsonEncode(message));
+    channel?.sink.add(jsonEncode(message));
   }
 
   @override
-  void initState() {
-    super.initState();
-    _connect();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    channel = context.read<WebSocketChannel?>();
+    _listen();
   }
 
-  Future<void> _connect() async {
-    try {
-      final config = Provider.of<Map<String, dynamic>>(context, listen: false);
-      final socketPort = config['WEB_SOCKET_PORT'];
-      _channel = WebSocketChannel.connect(
-        Uri.parse('ws://localhost:$socketPort/ws'),
-      );
-      await _channel!.ready;
-    } catch (e) {
-      debugPrint('Failed to connect to WebSocket: $e');
-      exit(1);
-    }
-
-    _channel!.stream.listen(
+  Future<void> _listen() async {
+    channel!.stream.listen(
       (data) {
         final message = jsonDecode(data);
         switch (message['Type']) {
@@ -101,7 +90,7 @@ class _SearchPageState extends State<SearchPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            SizedBox(width: 550, child: SearchBox(_channel, _suggestions)),
+            SizedBox(width: 550, child: SearchBox(channel, _suggestions)),
             SizedBox(height: 40),
             SizedBox(height: 150, child: DigitRow(_counter.toString())),
             SizedBox(height: 60),

@@ -4,21 +4,22 @@ import 'package:toml/toml.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:path/path.dart' as path;
+import 'dart:io' show exit;
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '_search_page.dart' show SearchPage;
 import '_settings_page.dart' show SettingsPage;
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+
   final directory = await getApplicationSupportDirectory();
   final confLocation = path.join(directory.path, 'config.toml');
   final document = await TomlDocument.load(confLocation);
   final config = document.toMap();
 
   debugPrint(config.toString());
-
-  WidgetsFlutterBinding.ensureInitialized();
-  // Must add this line.
-  await windowManager.ensureInitialized();
 
   WindowOptions windowOptions = WindowOptions(
     size: Size(800, 600),
@@ -32,7 +33,27 @@ void main() async {
     await windowManager.focus();
   });
 
-  runApp(Provider.value(value: config, child: const UI()));
+  WebSocketChannel? channel;
+  try {
+    final socketPort = config['WEB_SOCKET_PORT'];
+    channel = WebSocketChannel.connect(
+      Uri.parse('ws://localhost:$socketPort/ws'),
+    );
+    await channel.ready;
+  } catch (e) {
+    debugPrint('Failed to connect to WebSocket: $e');
+    exit(1);
+  }
+
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider.value(value: config),
+        Provider.value(value: channel),
+      ],
+      child: const UI(),
+    ),
+  );
 }
 
 class UI extends StatelessWidget {

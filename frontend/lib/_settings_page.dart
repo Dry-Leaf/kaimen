@@ -3,6 +3,7 @@ import 'dart:io' show exit;
 
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'package:file_selector/file_selector.dart';
 
@@ -49,7 +50,7 @@ class _MiscTabState extends State<MiscTab> {
                       // Process data.
                     }
                   },
-                  child: const Text('Submit'),
+                  child: const Text('Save'),
                 ),
               ),
             ],
@@ -116,6 +117,57 @@ class TextDisplay extends StatelessWidget {
   }
 }
 
+class SourceSettings extends StatefulWidget {
+  final Map<String, dynamic> board;
+  const SourceSettings({required this.board, super.key});
+
+  @override
+  State<SourceSettings> createState() => _SourceSettingsState();
+}
+
+/// Widget that displays a text file in a dialog
+class _SourceSettingsState extends State<SourceSettings> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Selected Directory'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            TextFormField(
+              initialValue: widget.board["name"],
+              decoration: const InputDecoration(hintText: 'Web Socket Port'),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: ElevatedButton(
+                onPressed: () {
+                  // Validate will return true if the form is valid, or false if
+                  // the form is invalid.
+                  if (_formKey.currentState!.validate()) {
+                    // Process data.
+                  }
+                },
+                child: const Text('Save'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class SourcesTab extends StatefulWidget {
   const SourcesTab({super.key});
 
@@ -124,6 +176,14 @@ class SourcesTab extends StatefulWidget {
 }
 
 class _SourcesTabState extends State<SourcesTab> {
+  late WebSocketChannel? channel;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    channel = context.read<WebSocketChannel?>();
+  }
+
   @override
   Widget build(BuildContext context) {
     var config = Provider.of<Map<String, dynamic>>(context, listen: false);
@@ -151,7 +211,7 @@ class _SourcesTabState extends State<SourcesTab> {
                     showDialog<void>(
                       context: context,
                       builder: (BuildContext context) =>
-                          TextDisplay('${boards[index]["url"]}'),
+                          SourceSettings(board: boards[index]),
                     );
                   },
                 ),
@@ -217,9 +277,14 @@ class _SourcesTabState extends State<SourcesTab> {
   }
 }
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
