@@ -22,40 +22,38 @@ class _MiscTabState extends State<MiscTab> {
     var config = Provider.of<Map<String, dynamic>>(context, listen: false);
     var wsp = config['WEB_SOCKET_PORT'];
 
-    return Center(
-      child: SizedBox(
-        width: 200,
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextFormField(
-                initialValue: wsp,
-                decoration: const InputDecoration(hintText: 'Web Socket Port'),
-                validator: (String? value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter some text';
-                  }
-                  return null;
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Validate will return true if the form is valid, or false if
-                    // the form is invalid.
-                    if (_formKey.currentState!.validate()) {
-                      // Process data.
+    return Scaffold(
+      body: Center(
+        child: SizedBox(
+          width: 200,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                TextFormField(
+                  initialValue: wsp,
+                  decoration: const InputDecoration(
+                    labelText: 'Web Socket Port',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter some text';
                     }
+                    return null;
                   },
-                  child: const Text('Save'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {},
+        tooltip: 'Save',
+        child: const Icon(Icons.save),
       ),
     );
   }
@@ -85,10 +83,51 @@ class DirectoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    //final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    var config = Provider.of<Map<String, dynamic>>(context, listen: false);
+    var dirs = config['DIRS'];
+
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color itemColor = colorScheme.primaryContainer;
+
+    final List<Card> cards = <Card>[
+      for (int index = 0; index < dirs.length; index += 1)
+        Card(
+          key: Key('$index'),
+          color: itemColor,
+          child: SizedBox(
+            height: 60,
+            width: 600,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Text(
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    '${dirs[index]}',
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.edit), onPressed: () {}),
+              ],
+            ),
+          ),
+        ),
+    ];
 
     return Scaffold(
-      body: Center(child: Text('Please add a directory to index.')),
+      body: Center(
+        child: cards.isEmpty
+            ? const Text('Please add a directory to index.')
+            : SizedBox(
+                width: 600,
+                child: ListView(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  children: cards,
+                ),
+              ),
+      ),
 
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -132,15 +171,84 @@ class _SourceSettingsState extends State<SourceSettings> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Selected Directory'),
+      title: const Text('Source Settings'),
+      constraints: const BoxConstraints(maxWidth: 500.0, minWidth: 500.0),
       content: Form(
         key: _formKey,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 16.0,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             TextFormField(
               initialValue: widget.board["name"],
-              decoration: const InputDecoration(hintText: 'Web Socket Port'),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                border: OutlineInputBorder(),
+              ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: 'Login',
+                border: OutlineInputBorder(),
+              ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: 'API Key',
+                border: OutlineInputBorder(),
+              ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              initialValue: widget.board["url"],
+              decoration: const InputDecoration(
+                labelText: 'URL',
+                border: OutlineInputBorder(),
+              ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              initialValue: widget.board["api_params"],
+              decoration: const InputDecoration(
+                labelText: 'API Query string',
+                border: OutlineInputBorder(),
+              ),
+              validator: (String? value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter some text';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              initialValue: widget.board["tag_key"],
+              decoration: const InputDecoration(
+                labelText: 'JSON Tag Key',
+                border: OutlineInputBorder(),
+              ),
               validator: (String? value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter some text';
@@ -150,15 +258,17 @@ class _SourceSettingsState extends State<SourceSettings> {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: ElevatedButton(
-                onPressed: () {
-                  // Validate will return true if the form is valid, or false if
-                  // the form is invalid.
-                  if (_formKey.currentState!.validate()) {
-                    // Process data.
-                  }
-                },
-                child: const Text('Save'),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(onPressed: () {}, child: const Text('Save')),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).pop('dialog');
+                    },
+                    child: const Text('Close'),
+                  ),
+                ],
               ),
             ),
           ],
@@ -204,7 +314,13 @@ class _SourcesTabState extends State<SourcesTab> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('${boards[index]["name"]}'),
+                Flexible(
+                  child: Text(
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    '${boards[index]["name"]}',
+                  ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {
@@ -249,8 +365,9 @@ class _SourcesTabState extends State<SourcesTab> {
     return Scaffold(
       body: Center(
         child: SizedBox(
-          width: 300, // This sets the overall width of the list area to 400px
+          width: 300,
           child: ReorderableListView(
+            shrinkWrap: true,
             padding: const EdgeInsets.symmetric(horizontal: 40),
             proxyDecorator: proxyDecorator,
             onReorder: (int oldIndex, int newIndex) {
@@ -268,7 +385,18 @@ class _SourcesTabState extends State<SourcesTab> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          debugPrint("WIP");
+          Map<String, String> newBoard = {
+            'name': "",
+            'url': "",
+            'api_params': "",
+            'tag_key': "",
+            'api_key': "",
+            'login': "",
+          };
+          showDialog<void>(
+            context: context,
+            builder: (BuildContext context) => SourceSettings(board: newBoard),
+          );
         },
         tooltip: 'Add Source',
         child: const Icon(Icons.add),
