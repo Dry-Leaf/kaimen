@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -18,7 +19,7 @@ var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
 
 type request struct {
 	Type  string `json:"Type"`
-	Value string `json:"Value"`
+	Value any    `json:"Value"`
 }
 
 type response struct {
@@ -67,6 +68,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		var req request
 		err = wsjson.Read(ctx, c, &req)
 		if err != nil {
+			log.Println(err)
 			log.Println("No active client connected")
 			connMu.Lock()
 			if activeConn == c {
@@ -82,7 +84,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			resp := response{Type: "counter", Value: file_count}
 			wsjson.Write(ctx, c, resp)
 		case "auto_suggest":
-			lw := strings.TrimLeft(last_word_reg.FindString(req.Value), "-")
+			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.(string)), "-")
 
 			var results []tag
 			if lw != "" {
@@ -92,8 +94,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			wsjson.Write(ctx, c, resp)
 		case "query":
-			if len(req.Value) > 0 {
-				nams = append([]string{".", ".."}, query(req.Value)...)
+			if len(req.Value.(string)) > 0 {
+				nams = append([]string{".", ".."}, query(req.Value.(string))...)
 				empty_query = false
 			} else {
 				empty_query = true
@@ -101,6 +103,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			resp := response{Type: "qcomplete", Value: len(nams) - 2}
 			wsjson.Write(ctx, c, resp)
+		default:
+			fmt.Println(req.Value)
 		}
 
 	}
