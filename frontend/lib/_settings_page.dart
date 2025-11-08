@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'dart:io' show exit;
+import 'dart:convert' show jsonEncode;
 
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,7 @@ class _MiscTabState extends State<MiscTab> {
 
   @override
   Widget build(BuildContext context) {
-    var config = Provider.of<Map<String, dynamic>>(context, listen: false);
+    var config = Provider.of<Map<String, dynamic>>(context, listen: true);
     var wsp = config['WEB_SOCKET_PORT'];
 
     return Scaffold(
@@ -83,7 +84,7 @@ class DirectoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var config = Provider.of<Map<String, dynamic>>(context, listen: false);
+    var config = Provider.of<Map<String, dynamic>>(context, listen: true);
     var dirs = config['DIRS'];
 
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -158,7 +159,8 @@ class TextDisplay extends StatelessWidget {
 
 class SourceSettings extends StatefulWidget {
   final Map<String, dynamic> board;
-  const SourceSettings({required this.board, super.key});
+  final WebSocketChannel? channel;
+  const SourceSettings({required this.board, required this.channel, super.key});
 
   @override
   State<SourceSettings> createState() => _SourceSettingsState();
@@ -167,6 +169,7 @@ class SourceSettings extends StatefulWidget {
 /// Widget that displays a text file in a dialog
 class _SourceSettingsState extends State<SourceSettings> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final Map<String, String?> _data = {};
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +195,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["name"] = v,
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -204,6 +208,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["login"] = v,
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -216,6 +221,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["api_key"] = v,
             ),
             TextFormField(
               initialValue: widget.board["url"],
@@ -229,6 +235,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["url"] = v,
             ),
             TextFormField(
               initialValue: widget.board["api_params"],
@@ -242,6 +249,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["api_params"] = v,
             ),
             TextFormField(
               initialValue: widget.board["tag_key"],
@@ -255,13 +263,30 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
+              onSaved: (v) => _data["tag_key"] = v,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  ElevatedButton(onPressed: () {}, child: const Text('Save')),
+                  ElevatedButton(
+                    onPressed: () {
+                      _formKey.currentState!.save();
+                      final message = {'Type': "edit_source", 'Value': _data};
+                      try {
+                        final jsonString = jsonEncode(message);
+                        widget.channel?.sink.add(jsonString);
+                        debugPrint('Sent: $jsonString');
+                      } catch (e) {
+                        debugPrint('Failed to encode/send message: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Invalid data: $e')),
+                        );
+                      }
+                    },
+                    child: const Text('Save'),
+                  ),
                   ElevatedButton(
                     onPressed: () {
                       Navigator.of(context, rootNavigator: true).pop('dialog');
@@ -296,7 +321,7 @@ class _SourcesTabState extends State<SourcesTab> {
 
   @override
   Widget build(BuildContext context) {
-    var config = Provider.of<Map<String, dynamic>>(context, listen: false);
+    var config = Provider.of<Map<String, dynamic>>(context, listen: true);
     var boards = config['boards'];
 
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -326,8 +351,10 @@ class _SourcesTabState extends State<SourcesTab> {
                   onPressed: () {
                     showDialog<void>(
                       context: context,
-                      builder: (BuildContext context) =>
-                          SourceSettings(board: boards[index]),
+                      builder: (BuildContext context) => SourceSettings(
+                        board: boards[index],
+                        channel: channel,
+                      ),
                     );
                   },
                 ),
@@ -395,7 +422,8 @@ class _SourcesTabState extends State<SourcesTab> {
           };
           showDialog<void>(
             context: context,
-            builder: (BuildContext context) => SourceSettings(board: newBoard),
+            builder: (BuildContext context) =>
+                SourceSettings(board: newBoard, channel: channel),
           );
         },
         tooltip: 'Add Source',
