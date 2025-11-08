@@ -169,7 +169,6 @@ class SourceSettings extends StatefulWidget {
 /// Widget that displays a text file in a dialog
 class _SourceSettingsState extends State<SourceSettings> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final Map<String, String?> _data = {};
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +194,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["name"] = v,
+              onSaved: (v) => widget.board["name"] = v,
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -208,7 +207,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["login"] = v,
+              onSaved: (v) => widget.board["login"] = v,
             ),
             TextFormField(
               decoration: const InputDecoration(
@@ -221,7 +220,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["api_key"] = v,
+              onSaved: (v) => widget.board["api_key"] = v,
             ),
             TextFormField(
               initialValue: widget.board["url"],
@@ -235,7 +234,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["url"] = v,
+              onSaved: (v) => widget.board["url"] = v,
             ),
             TextFormField(
               initialValue: widget.board["api_params"],
@@ -249,7 +248,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["api_params"] = v,
+              onSaved: (v) => widget.board["api_params"] = v,
             ),
             TextFormField(
               initialValue: widget.board["tag_key"],
@@ -263,7 +262,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 }
                 return null;
               },
-              onSaved: (v) => _data["tag_key"] = v,
+              onSaved: (v) => widget.board["tag_key"] = v,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -273,11 +272,13 @@ class _SourceSettingsState extends State<SourceSettings> {
                   ElevatedButton(
                     onPressed: () {
                       _formKey.currentState!.save();
-                      final message = {'Type': "edit_source", 'Value': _data};
+                      final message = {
+                        'Type': "edit_source",
+                        'Value': widget.board,
+                      };
                       try {
                         final jsonString = jsonEncode(message);
                         widget.channel?.sink.add(jsonString);
-                        debugPrint('Sent: $jsonString');
                       } catch (e) {
                         debugPrint('Failed to encode/send message: $e');
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -349,12 +350,13 @@ class _SourcesTabState extends State<SourcesTab> {
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {
+                    Map<String, dynamic> board = Map.of(boards[index]);
+                    board['mode'] = "edit";
+                    board['original_name'] = board['name'];
                     showDialog<void>(
                       context: context,
-                      builder: (BuildContext context) => SourceSettings(
-                        board: boards[index],
-                        channel: channel,
-                      ),
+                      builder: (BuildContext context) =>
+                          SourceSettings(board: board, channel: channel),
                     );
                   },
                 ),
@@ -405,6 +407,12 @@ class _SourcesTabState extends State<SourcesTab> {
                 final item = boards.removeAt(oldIndex);
                 boards.insert(newIndex, item);
               });
+              List<dynamic> names = boards
+                  .map((board) => board['name'] as String)
+                  .toList();
+              final message = {'Type': "reorder_sources", 'Value': names};
+              final jsonString = jsonEncode(message);
+              channel?.sink.add(jsonString);
             },
             children: cards,
           ),
@@ -419,6 +427,7 @@ class _SourcesTabState extends State<SourcesTab> {
             'tag_key': "",
             'api_key': "",
             'login': "",
+            'mode': "create",
           };
           showDialog<void>(
             context: context,
