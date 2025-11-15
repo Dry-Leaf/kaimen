@@ -1,78 +1,86 @@
-import 'dart:convert' show jsonDecode, jsonEncode;
+import 'dart:convert' show jsonEncode;
 import 'package:flutter/material.dart';
 import 'dart:io' show exit;
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '_search_box.dart' show SearchBox;
+import '_backend_conn.dart'
+    show Conn, Message, messageByTypeProvider, connProvider;
+//import '_search_box.dart' show SearchBox;
 import '_suggestions.dart' show Suggestion;
 import '_digit_row.dart' show DigitRow;
 
-class SearchPage extends StatefulWidget {
+class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  ConsumerState<SearchPage> createState() => _SearchPageState();
 }
 
-class _SearchPageState extends State<SearchPage> {
-  late WebSocketChannel? channel;
+class _SearchPageState extends ConsumerState<SearchPage> {
   String _counter = "0";
   final _suggestions = ValueNotifier<List<Suggestion>>([]);
-
-  void _requestCounter() {
-    final message = {'Type': "counter"};
-    channel?.sink.add(jsonEncode(message));
-  }
+  late final AsyncValue<Conn> conn;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    channel = context.read<WebSocketChannel?>();
-    _listen();
+  void initState() {
+    super.initState();
+
+    ref.listenManual<AsyncValue<Conn>>(connProvider, (prev, next) {
+      next.whenData((conn) {
+        debugPrint("connProvider heard");
+        final msg = {"Type": Message.counter.index};
+        debugPrint(jsonEncode(msg));
+        conn.send(jsonEncode(msg));
+      });
+    });
   }
 
-  Future<void> _listen() async {
-    channel!.stream.listen(
-      (data) {
-        final message = jsonDecode(data);
-        switch (message['Type']) {
-          case 'counter':
-            setState(() {
-              _counter = message['Value'];
-            });
-          case 'autosuggest':
-            if (message['Value'] != null) {
-              final suggestions = (message['Value'] as List)
-                  .map((e) => Suggestion.fromJson(e as Map<String, dynamic>))
-                  .toList();
-              _suggestions.value = suggestions;
-            } else {
-              _suggestions.value = [];
-            }
-        }
-      },
-      onError: (error) {
-        setState(() {
-          debugPrint('Terminating app: $error');
-          exit(1);
-        });
-      },
-      onDone: () {
-        setState(() {
-          debugPrint('Connection closed');
-          exit(1);
-        });
-      },
-    );
+  // @override
+  // void didChangeDependencies() {
+  //   super.didChangeDependencies();
+  //   channel = context.read<WebSocketChannel?>();
+  // }
 
-    _requestCounter();
-  }
+  // Future<void> _listen() async {
+  //   channel!.stream.listen(
+  //     (data) {
+  //       final message = jsonDecode(data);
+  //       switch (message['Type']) {
+  //         case 'counter':
+  //           setState(() {
+  //             _counter = message['Value'];
+  //           });
+  //         case 'autosuggest':
+  //           if (message['Value'] != null) {
+  //             final suggestions = (message['Value'] as List)
+  //                 .map((e) => Suggestion.fromJson(e as Map<String, dynamic>))
+  //                 .toList();
+  //             _suggestions.value = suggestions;
+  //           } else {
+  //             _suggestions.value = [];
+  //           }
+  //       }
+  //     },
+  //     onError: (error) {
+  //       setState(() {
+  //         debugPrint('Terminating app: $error');
+  //         exit(1);
+  //       });
+  //     },
+  //     onDone: () {
+  //       setState(() {
+  //         debugPrint('Connection closed');
+  //         exit(1);
+  //       });
+  //     },
+  //   );
 
   @override
   Widget build(BuildContext context) {
+    final counterMessage = ref.watch(messageByTypeProvider(Message.counter));
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
@@ -86,16 +94,23 @@ class _SearchPageState extends State<SearchPage> {
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            SizedBox(width: 550, child: SearchBox(channel, _suggestions)),
-            SizedBox(height: 40),
-            SizedBox(height: 150, child: DigitRow(_counter.toString())),
-            SizedBox(height: 60),
-          ],
-        ),
+      body: counterMessage.when(
+        loading: () => Center(child: CircularProgressIndicator()),
+        error: (err, _) => Text('Error: $err'),
+        data: (msg) {
+          _counter = msg['Value'];
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                //SizedBox(width: 550, child: SearchBox(_suggestions)),
+                SizedBox(height: 40),
+                SizedBox(height: 150, child: DigitRow(_counter.toString())),
+                SizedBox(height: 60),
+              ],
+            ),
+          );
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

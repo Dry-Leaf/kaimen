@@ -138,7 +138,7 @@ func delete_file(path string) {
 	delete_stmt.Exec(path)
 
 	tx.Commit()
-	update()
+	update(counter)
 }
 
 func get_count() int {
@@ -321,7 +321,7 @@ func insert_metadata(md5sum, path, ext string, tags []string) {
 	}
 
 	tx.Commit()
-	update()
+	update(counter)
 }
 
 func new_db() {

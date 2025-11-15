@@ -1,14 +1,12 @@
 import 'dart:convert' show jsonEncode;
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '_suggestions.dart' show Suggestion, SuggestionList;
 
 class TextInput extends StatefulWidget {
-  final WebSocketChannel? _channel;
   final ValueNotifier<List<Suggestion>> _suggestions;
-  const TextInput(this._channel, this._suggestions, {super.key});
+  const TextInput(this._suggestions, {super.key});
 
   @override
   State<TextInput> createState() => _TextInput();
@@ -149,9 +147,8 @@ class _TextInput extends State<TextInput> {
 }
 
 class SearchBox extends StatefulWidget {
-  final WebSocketChannel? _channel;
   final ValueNotifier<List<Suggestion>> _suggestions;
-  const SearchBox(this._channel, this._suggestions, {super.key});
+  const SearchBox(this._suggestions, {super.key});
 
   @override
   State<SearchBox> createState() => _SearchBox();
@@ -168,6 +165,6 @@ class _SearchBox extends State<SearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return TextInput(widget._channel, widget._suggestions);
+    return TextInput(widget._suggestions);
   }
 }

@@ -22,18 +22,20 @@ func init() {
 }
 
 func main() {
-	dirs := Read_conf()
+	Read_conf()
 
 	if _, err := os.Stat(db_path); err != nil {
 		new_db()
 	}
 
-	for _, dir := range dirs {
+	confMu.Lock()
+	for _, dir := range Dirs {
 		go func() {
 			filepath.WalkDir(dir, initial_crawl)
 		}()
 		go dir_watch(dir)
 	}
+	confMu.Unlock()
 
 	go dequeue()
 	go server()
