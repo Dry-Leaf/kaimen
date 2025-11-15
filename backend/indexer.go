@@ -137,6 +137,9 @@ func get_tag_cat(tag string) int {
 }
 
 func get_tags(md5sum string) []string {
+	confMu.Lock()
+	defer confMu.Unlock()
+
 	for _, booru := range Sources {
 		url := booru.URL + md5sum
 		if booru.API_PARAMS != "" {

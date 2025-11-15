@@ -8,30 +8,29 @@ DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\cod
 # Add account credentials if need be (ToDo: document this)
 [[boards]]
 
-    name = 'Gelbooru'
+    NAME = 'Gelbooru'
 
-    url = 'https://gelbooru.com/index.php?json=1&limit=1&page=dapi&s=post&q=index&tags=md5%3A'
+    URL = 'https://gelbooru.com/index.php?json=1&limit=1&page=dapi&s=post&q=index&tags=md5%3A'
 
-    api_params = '&user_id=%s&api_key=%s'
+    API_PARAMS = '&user_id=%s&api_key=%s'
 
-    tag_key = 'tags'
+    TAG_KEY = 'tags'
+
+[[boards]]
+
+    NAME = 'Danbooru'
+
+    URL = 'https://danbooru.donmai.us/posts.json?limit=1&tags=md5%3A'
+
+    API_PARAMS = '&login=%s&api_key=%s'
+
+    TAG_KEY = 'tag_string'
 
 
 [[boards]]
 
-    name = 'Danbooru'
+    NAME = 'Yandere'
 
-    url = 'https://danbooru.donmai.us/posts.json?limit=1&tags=md5%3A'
+    URL = 'https://yande.re/post.json?limit=1&tags=md5%3A'
 
-    api_params = '&login=%s&api_key=%s'
-
-    tag_key = 'tag_string'
-
-
-[[boards]]
-
-    name = 'Yandere'
-
-    url = 'https://yande.re/post.json?limit=1&tags=md5%3A'
-
-    tag_key = 'tags'
+    TAG_KEY = 'tags'

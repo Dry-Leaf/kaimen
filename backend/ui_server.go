@@ -15,16 +15,24 @@ import (
 	"github.com/coder/websocket/wsjson"
 )
 
+type MessageType int64
+
+const (
+	counter MessageType = iota
+	autosuggest
+	updateconf
+	userquery
+	qcomplete
+	createsource
+	editsource
+	reordersources
+)
+
 var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
 
-type request struct {
-	Type  string `json:"Type"`
-	Value any    `json:"Value"`
-}
-
-type response struct {
-	Type  string `json:"Type"`
-	Value any    `json:"Value"`
+type message struct {
+	Type  MessageType `json:"Type"`
+	Value any         `json:"Value"`
 }
 
 var (
@@ -32,7 +40,7 @@ var (
 	connMu     sync.Mutex
 )
 
-func update() {
+func update(mode MessageType) {
 	connMu.Lock()
 	if activeConn == nil {
 		log.Println("No active client connected")
@@ -45,9 +53,15 @@ func update() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	file_count := strconv.Itoa(get_count())
+	var resp message
 
-	resp := response{Type: "counter", Value: file_count}
+	switch mode {
+	case counter:
+		file_count := strconv.Itoa(get_count())
+		resp = message{Type: counter, Value: file_count}
+	case updateconf:
+		resp = message{Type: updateconf, Value: ""}
+	}
 
 	err := wsjson.Write(ctx, c, resp)
 	Err_check(err)
@@ -65,8 +79,9 @@ func handle(w http.ResponseWriter, r *http.Request) {
 	for {
 		ctx := context.Background()
 
-		var req request
+		var req message
 		err = wsjson.Read(ctx, c, &req)
+
 		if err != nil {
 			log.Println(err)
 			log.Println("No active client connected")
@@ -78,22 +93,28 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
+		fmt.Println("MESSAGE RECEIVED")
+		fmt.Println(req)
+		fmt.Println(req.Type)
+
 		switch req.Type {
-		case "counter":
+		case counter:
 			file_count := strconv.Itoa(get_count())
-			resp := response{Type: "counter", Value: file_count}
+			resp := message{Type: counter, Value: file_count}
+			fmt.Println("SENDING RESPONSE")
+			fmt.Println(resp)
 			wsjson.Write(ctx, c, resp)
-		case "auto_suggest":
+		case autosuggest:
 			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.(string)), "-")
 
 			var results []tag
 			if lw != "" {
 				results = get_suggestions(lw)
 			}
-			resp := response{Type: "autosuggest", Value: results}
+			resp := message{Type: autosuggest, Value: results}
 
 			wsjson.Write(ctx, c, resp)
-		case "query":
+		case userquery:
 			if len(req.Value.(string)) > 0 {
 				nams = append([]string{".", ".."}, query(req.Value.(string))...)
 				empty_query = false
@@ -101,8 +122,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				empty_query = true
 			}
 
-			resp := response{Type: "qcomplete", Value: len(nams) - 2}
+			resp := message{Type: qcomplete, Value: len(nams) - 2}
 			wsjson.Write(ctx, c, resp)
+		case createsource, editsource, reordersources:
+			fmt.Println(req.Type)
+			Edit_conf(req.Type, req.Value)
 		default:
 			fmt.Println(req.Value)
 		}
