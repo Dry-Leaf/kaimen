@@ -1,4 +1,3 @@
-import 'dart:convert' show jsonEncode;
 import 'package:flutter/material.dart';
 import 'dart:io' show exit;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,11 +23,11 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   void initState() {
     super.initState();
 
-    ref.listenManual<AsyncValue<Conn>>(connProvider, (prev, next) {
-      next.whenData((conn) {
-        conn.send(Message.counter, "");
-      });
-    });
+    ref.listenManual<AsyncValue<Conn>>(
+      connProvider,
+      (prev, next) => next.whenData((c) => c.send(Message.counter, '')),
+      fireImmediately: true,
+    );
   }
 
   @override
@@ -52,7 +51,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         loading: () => Center(child: CircularProgressIndicator()),
         error: (err, _) => Text('Error: $err'),
         data: (msg) {
-          _counter = msg['Value'];
+          _counter = msg;
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,

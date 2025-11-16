@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:file_selector/file_selector.dart';
 
-import '_conf.dart' show configProvider;
+import '_backend_conn.dart' show Message, messageByTypeProvider;
 
 class DirectoryTab extends ConsumerWidget {
   const DirectoryTab({super.key});
@@ -27,13 +27,24 @@ class DirectoryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    AsyncValue<Map<String, dynamic>> config = ref.watch(configProvider);
+    AsyncValue<dynamic> config = ref.watch(
+      messageByTypeProvider(Message.getconf),
+    );
 
     return config.when(
       loading: () => const CircularProgressIndicator(),
       error: (err, stack) => Text('Error: $err'),
       data: (config) {
-        var dirs = config['DIRS'];
+        debugPrint("WHAT I HAVE");
+        debugPrint(config.toString());
+
+        debugPrint("WHAT I HAVE");
+        debugPrint(config.keys.toString());
+
+        var dirs = config['Dirs'];
+
+        debugPrint("WHAT I HAVE DIRS");
+        debugPrint(dirs.toString());
 
         final ColorScheme colorScheme = Theme.of(context).colorScheme;
         final Color itemColor = colorScheme.primaryContainer;
@@ -51,10 +62,15 @@ class DirectoryTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Flexible(
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        '${dirs[index]}',
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                        ), // Adjust as needed
+                        child: Text(
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          '${dirs[index]}',
+                        ),
                       ),
                     ),
                     IconButton(icon: const Icon(Icons.edit), onPressed: () {}),

@@ -15,13 +15,18 @@ enum Message {
   createsource,
   editsource,
   reordersources,
+  getconf,
 }
 
-final messageByTypeProvider =
-    StreamProvider.family<Map<String, dynamic>, Message>((ref, type) async* {
-      final conn = await ref.watch(connProvider.future);
-      yield* conn.messages.where((msg) => msg['Type'] == type.index);
-    });
+final messageByTypeProvider = StreamProvider.family<dynamic, Message>((
+  ref,
+  type,
+) async* {
+  final conn = await ref.watch(connProvider.future);
+  yield* conn.messages
+      .where((msg) => msg['Type'] == type.index)
+      .map((msg) => msg['Value']);
+});
 
 final connProvider = FutureProvider<Conn>((ref) async {
   final conn = Conn();

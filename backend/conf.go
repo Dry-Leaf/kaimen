@@ -15,9 +15,9 @@ import (
 )
 
 type Config struct {
-	Boards        []*SOURCE `toml:"boards"`
-	Dirs          []string  `toml:"DIRS"`
-	WebSocketPort string    `toml:"WEB_SOCKET_PORT"`
+	Boards        []SOURCE `toml:"boards"`
+	Dirs          []string `toml:"DIRS"`
+	WebSocketPort string   `toml:"WEB_SOCKET_PORT"`
 }
 
 type SOURCE struct {
@@ -36,10 +36,14 @@ var embedFS embed.FS
 var Web_socket_port string
 
 var (
-	Sources []*SOURCE
+	Sources []SOURCE
 	Dirs    []string
 	confMu  sync.Mutex
 )
+
+func gather_conf() Config {
+	return Config{Boards: Sources, Dirs: Dirs}
+}
 
 func Edit_conf(mode MessageType, data any) {
 	var conf Config
@@ -63,7 +67,7 @@ func Edit_conf(mode MessageType, data any) {
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
 		}
-		conf.Boards = append(conf.Boards, &new_source)
+		conf.Boards = append(conf.Boards, new_source)
 	case editsource:
 	case reordersources:
 	}
@@ -105,13 +109,18 @@ func Read_conf() {
 	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
+	fmt.Println("CONF READ")
+	fmt.Println(conf)
+
 	Sources = conf.Boards
 	Web_socket_port = conf.WebSocketPort
 
 	err = godotenv.Load(".env")
 	Err_check(err)
 
-	for _, booru := range Sources {
+	for i := range Sources {
+		booru := &Sources[i]
+
 		booru.TAG_REGEX = regexp.MustCompile(`"` + booru.TAG_KEY + `":"([^"]*)?`)
 		if booru.API_PARAMS != "" {
 			login := os.Getenv(booru.NAME + "_LOGIN")
@@ -134,6 +143,6 @@ func Read_conf() {
 
 	confMu.Unlock()
 	for _, booru := range Sources {
-		fmt.Println(*booru)
+		fmt.Println(booru)
 	}
 }
