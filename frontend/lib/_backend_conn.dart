@@ -18,13 +18,9 @@ enum Message {
 }
 
 final messageByTypeProvider =
-    StreamProvider.family<Map<String, dynamic>, Message>((ref, type) {
-      final connAsync = ref.watch(connProvider);
-
-      return connAsync.maybeWhen(
-        data: (conn) => conn.messages.where((msg) => msg['Type'] == type.index),
-        orElse: () => const Stream.empty(),
-      );
+    StreamProvider.family<Map<String, dynamic>, Message>((ref, type) async* {
+      final conn = await ref.watch(connProvider.future);
+      yield* conn.messages.where((msg) => msg['Type'] == type.index);
     });
 
 final connProvider = FutureProvider<Conn>((ref) async {
@@ -41,7 +37,7 @@ class Conn {
   Stream<Map<String, dynamic>> get messages => _controller.stream;
 
   Future<void> connect() async {
-    final socketPort = "49152"; //Config.getConfig['WEB_SOCKET_PORT'];
+    final socketPort = "49152"; //Replace with zeroconf
     channel = WebSocketChannel.connect(
       Uri.parse('ws://localhost:$socketPort/ws'),
     );
