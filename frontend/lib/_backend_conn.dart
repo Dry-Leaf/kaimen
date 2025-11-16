@@ -1,10 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:convert' show jsonDecode, jsonEncode;
 import 'dart:async' show StreamController;
 
-import 'dart:io' show exit;
+import 'package:path/path.dart' as path;
 
 enum Message {
   counter,
@@ -42,10 +44,17 @@ class Conn {
   Stream<Map<String, dynamic>> get messages => _controller.stream;
 
   Future<void> connect() async {
-    final socketPort = "49152"; //Replace with zeroconf
+    final directory = await getTemporaryDirectory();
+    final portLocation = path.join(directory.path, 'kaimen_port');
+
+    final socketPort = await File(portLocation).readAsString();
+    debugPrint("PORT: $socketPort");
+
     channel = WebSocketChannel.connect(
       Uri.parse('ws://localhost:$socketPort/ws'),
     );
+
+    await channel.ready;
 
     channel.stream.listen(
       (data) {

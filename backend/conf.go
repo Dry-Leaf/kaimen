@@ -15,9 +15,8 @@ import (
 )
 
 type Config struct {
-	Boards        []SOURCE `toml:"boards"`
-	Dirs          []string `toml:"DIRS"`
-	WebSocketPort string   `toml:"WEB_SOCKET_PORT"`
+	Boards []SOURCE `toml:"boards"`
+	Dirs   []string `toml:"DIRS"`
 }
 
 type SOURCE struct {
@@ -32,8 +31,6 @@ type SOURCE struct {
 
 //go:embed config.toml
 var embedFS embed.FS
-
-var Web_socket_port string
 
 var (
 	Sources []SOURCE
@@ -92,7 +89,7 @@ func Read_conf() {
 
 	confMu.Lock()
 	os.MkdirAll(filepath.Join(conf_dir, "kaimen"), 0755)
-	f, err := os.OpenFile(conf_path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0666)
+	f, err := os.OpenFile(conf_path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0644)
 
 	if err == nil {
 		default_conf, err := embedFS.ReadFile("config.toml")
@@ -113,7 +110,6 @@ func Read_conf() {
 	fmt.Println(conf)
 
 	Sources = conf.Boards
-	Web_socket_port = conf.WebSocketPort
 
 	err = godotenv.Load(".env")
 	Err_check(err)

@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -136,7 +139,19 @@ func handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func server() {
-	http.HandleFunc("/", handle)
-	err := http.ListenAndServe("localhost:"+Web_socket_port, nil)
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	Err_check(err)
+	defer listener.Close()
+
+	addr := listener.Addr().(*net.TCPAddr)
+	actualPort := addr.Port
+
+	port_path := filepath.Join(os.TempDir(), "kaimen_port")
+	err = os.WriteFile(port_path, []byte(strconv.Itoa(actualPort)), 0644)
+	Err_check(err)
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handle)
+	err = http.Serve(listener, mux)
 	log.Fatal(err)
 }

@@ -1,7 +1,5 @@
 # Kaimen Configuration
 
-WEB_SOCKET_PORT= '49152'
-
 # Comma seperated directories to index
 DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\code\compiled\go\kaimen\backend\test_images2' ]
 
