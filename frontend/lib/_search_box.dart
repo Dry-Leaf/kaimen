@@ -1,21 +1,26 @@
 import 'dart:convert' show jsonEncode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '_suggestions.dart' show Suggestion, SuggestionList;
 
-class TextInput extends StatefulWidget {
-  final ValueNotifier<List<Suggestion>> _suggestions;
-  const TextInput(this._suggestions, {super.key});
+import '_backend_conn.dart'
+    show Conn, Message, messageByTypeProvider, connProvider;
+
+class TextInput extends ConsumerStatefulWidget {
+  const TextInput({super.key});
 
   @override
-  State<TextInput> createState() => _TextInput();
+  ConsumerState<TextInput> createState() => _TextInput();
 }
 
-class _TextInput extends State<TextInput> {
+class _TextInput extends ConsumerState<TextInput> {
   final _textController = TextEditingController();
   final _overlayController = OverlayPortalController();
   final _link = LayerLink();
+  late final ValueNotifier<List<Suggestion>> _suggestions;
+  late final Conn conn;
   String _priorText = "";
 
   final FocusNode _textFieldFocusNode = FocusNode();
@@ -24,11 +29,19 @@ class _TextInput extends State<TextInput> {
   @override
   void initState() {
     super.initState();
+    _suggestions = ValueNotifier<List<Suggestion>>([]);
+
+    conn = ref
+        .read(connProvider)
+        .maybeWhen(
+          data: (conn) => conn,
+          orElse: () => throw Exception('Connection not ready'),
+        );
 
     _textController.addListener(_autoSuggestReq);
     _textFieldFocusNode.addListener(_updateVisibilityChange);
     _textFieldFocusNode.addListener(_handleFocusAndCaret);
-    widget._suggestions.addListener(_updateVisibilityChange);
+    _suggestions.addListener(_updateVisibilityChange);
     _textController.addListener(_updateVisibilityChange);
     _suggestionsFocusNode.addListener(_updateVisibilityChange);
   }
@@ -45,22 +58,30 @@ class _TextInput extends State<TextInput> {
   }
 
   void _autoSuggestReq() {
-    if (_textController.text.isNotEmpty) {
-      if (_textController.text == _priorText) {
-        return;
-      }
-      setState(() {
-        _priorText = _textController.text;
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_textController.text.isNotEmpty) {
+        if (_textController.text == _priorText) {
+          return;
+        }
+        setState(() {
+          _priorText = _textController.text;
+        });
 
-      final message = {"Type": "auto_suggest", "Value": _textController.text};
-      widget._channel?.sink.add(jsonEncode(message));
-    }
+        final message = {
+          "Type": Message.autosuggest.index,
+          "Value": _textController.text,
+        };
+        conn.send(jsonEncode(message));
+      }
+    });
   }
 
   void _sendQuery() {
-    final message = {"Type": "query", "Value": _textController.text};
-    widget._channel?.sink.add(jsonEncode(message));
+    final message = {
+      "Type": Message.userquery.index,
+      "Value": _textController.text,
+    };
+    conn.send(jsonEncode(message));
     _textController.text = "";
     _updateVisibilityChange();
   }
@@ -71,7 +92,7 @@ class _TextInput extends State<TextInput> {
     final hasText = _textController.text.isNotEmpty;
 
     if ((tfHasFocus || sHasFocus) &&
-        (widget._suggestions.value.isNotEmpty) &&
+        (_suggestions.value.isNotEmpty) &&
         hasText) {
       _overlayController.show();
     } else {
@@ -83,14 +104,14 @@ class _TextInput extends State<TextInput> {
     if (event is KeyDownEvent) {
       if (_textFieldFocusNode.hasFocus) {
         if (event.logicalKey == LogicalKeyboardKey.tab &&
-            widget._suggestions.value.isNotEmpty) {
-          _textController.text += '${widget._suggestions.value[0].remainder} ';
+            _suggestions.value.isNotEmpty) {
+          _textController.text += '${_suggestions.value[0].remainder} ';
           _textController.selection = TextSelection.collapsed(
             offset: _textController.text.length,
           );
           return KeyEventResult.handled;
         } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
-            widget._suggestions.value.isNotEmpty) {
+            _suggestions.value.isNotEmpty) {
           _suggestionsFocusNode.requestFocus();
           return KeyEventResult.handled;
         } else if (_textFieldFocusNode.hasFocus &&
@@ -104,6 +125,28 @@ class _TextInput extends State<TextInput> {
 
   @override
   Widget build(BuildContext context) {
+    final autosuggestMessage = ref.watch(
+      messageByTypeProvider(Message.autosuggest),
+    );
+
+    autosuggestMessage.when(
+      data: (msg) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (msg['Value'] != null) {
+            final parsed = (msg['Value'] as List)
+                .map((e) => Suggestion.fromJson(e))
+                .toList();
+
+            _suggestions.value = parsed;
+          } else {
+            _suggestions.value = [];
+          }
+        });
+      },
+      loading: () {},
+      error: (_, __) {},
+    );
+
     return OverlayPortal(
       controller: _overlayController,
       overlayChildBuilder: (context) => UnconstrainedBox(
@@ -112,15 +155,20 @@ class _TextInput extends State<TextInput> {
           targetAnchor: Alignment.bottomLeft,
           followerAnchor: Alignment.topLeft,
           offset: const Offset(0, .5),
-          child: SizedBox(
-            width: 550,
-            height: widget._suggestions.value.length * 27 + 2,
-            child: SuggestionList(
-              widget._suggestions,
-              _textController,
-              _textFieldFocusNode,
-              _suggestionsFocusNode,
-            ),
+          child: ValueListenableBuilder<List<Suggestion>>(
+            valueListenable: _suggestions,
+            builder: (context, suggestions, _) {
+              return SizedBox(
+                width: 550,
+                height: _suggestions.value.length * 27 + 2,
+                child: SuggestionList(
+                  _suggestions,
+                  _textController,
+                  _textFieldFocusNode,
+                  _suggestionsFocusNode,
+                ),
+              );
+            },
           ),
         ),
       ),
@@ -147,8 +195,7 @@ class _TextInput extends State<TextInput> {
 }
 
 class SearchBox extends StatefulWidget {
-  final ValueNotifier<List<Suggestion>> _suggestions;
-  const SearchBox(this._suggestions, {super.key});
+  const SearchBox({super.key});
 
   @override
   State<SearchBox> createState() => _SearchBox();
@@ -165,6 +212,6 @@ class _SearchBox extends State<SearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return TextInput(widget._suggestions);
+    return TextInput();
   }
 }

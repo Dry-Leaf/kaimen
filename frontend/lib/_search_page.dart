@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
-//import '_search_box.dart' show SearchBox;
-import '_suggestions.dart' show Suggestion;
+import '_search_box.dart' show SearchBox;
 import '_digit_row.dart' show DigitRow;
 
 class SearchPage extends ConsumerStatefulWidget {
@@ -20,8 +19,6 @@ class SearchPage extends ConsumerStatefulWidget {
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   String _counter = "0";
-  final _suggestions = ValueNotifier<List<Suggestion>>([]);
-  late final AsyncValue<Conn> conn;
 
   @override
   void initState() {
@@ -36,46 +33,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       });
     });
   }
-
-  // @override
-  // void didChangeDependencies() {
-  //   super.didChangeDependencies();
-  //   channel = context.read<WebSocketChannel?>();
-  // }
-
-  // Future<void> _listen() async {
-  //   channel!.stream.listen(
-  //     (data) {
-  //       final message = jsonDecode(data);
-  //       switch (message['Type']) {
-  //         case 'counter':
-  //           setState(() {
-  //             _counter = message['Value'];
-  //           });
-  //         case 'autosuggest':
-  //           if (message['Value'] != null) {
-  //             final suggestions = (message['Value'] as List)
-  //                 .map((e) => Suggestion.fromJson(e as Map<String, dynamic>))
-  //                 .toList();
-  //             _suggestions.value = suggestions;
-  //           } else {
-  //             _suggestions.value = [];
-  //           }
-  //       }
-  //     },
-  //     onError: (error) {
-  //       setState(() {
-  //         debugPrint('Terminating app: $error');
-  //         exit(1);
-  //       });
-  //     },
-  //     onDone: () {
-  //       setState(() {
-  //         debugPrint('Connection closed');
-  //         exit(1);
-  //       });
-  //     },
-  //   );
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +60,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                //SizedBox(width: 550, child: SearchBox(_suggestions)),
+                SizedBox(width: 550, child: SearchBox()),
                 SizedBox(height: 40),
                 SizedBox(height: 150, child: DigitRow(_counter.toString())),
                 SizedBox(height: 60),
