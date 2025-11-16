@@ -1,20 +1,19 @@
 import 'dart:ui';
-import 'dart:convert' show jsonEncode;
 
 import 'package:flutter/material.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '_conf.dart' show Config;
+import '_backend_conn.dart' show Conn, Message, connProvider;
+import '_conf.dart' show configProvider;
 
 class SourceSettings extends StatefulWidget {
   final Map<String, dynamic> board;
-  final String mode;
-  final WebSocketChannel? channel;
+  final Message mode;
+  final Conn conn;
   const SourceSettings({
     required this.board,
     required this.mode,
-    required this.channel,
+    required this.conn,
     super.key,
   });
 
@@ -130,13 +129,8 @@ class _SourceSettingsState extends State<SourceSettings> {
                   ElevatedButton(
                     onPressed: () {
                       _formKey.currentState!.save();
-                      final message = {
-                        'Type': widget.mode,
-                        'Value': widget.board,
-                      };
                       try {
-                        final jsonString = jsonEncode(message);
-                        widget.channel?.sink.add(jsonString);
+                        widget.conn.send(widget.mode, widget.board);
                       } catch (e) {
                         debugPrint('Failed to encode/send message: $e');
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -170,135 +164,143 @@ class SourcesTab extends ConsumerStatefulWidget {
 }
 
 class _SourcesTabState extends ConsumerState<SourcesTab> {
-  late WebSocketChannel? channel;
+  late final Conn conn;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    channel = context.read<WebSocketChannel?>();
+  void initState() {
+    super.initState();
+
+    conn = ref
+        .read(connProvider)
+        .maybeWhen(
+          data: (conn) => conn,
+          orElse: () => throw Exception('Connection not ready'),
+        );
   }
 
   @override
   Widget build(BuildContext context) {
-    var boards = Config.getConfig['boards'];
+    AsyncValue<Map<String, dynamic>> config = ref.watch(configProvider);
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color itemColor = colorScheme.primaryContainer;
+    return config.when(
+      loading: () => const CircularProgressIndicator(),
+      error: (err, stack) => Text('Error: $err'),
+      data: (config) {
+        var boards = config['boards'];
+        debugPrint(boards.toString());
 
-    final List<Card> cards = <Card>[
-      for (int index = 0; index < boards.length; index += 1)
-        Card(
-          key: Key('$index'),
-          color: itemColor,
-          child: SizedBox(
-            height: 60,
-            width: 300,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    '${boards[index]["NAME"]}',
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    Map<String, dynamic> board = Map.of(boards[index]);
-                    board['original_name'] = board['name'];
-                    showDialog<void>(
-                      context: context,
-                      builder: (BuildContext context) => SourceSettings(
-                        board: board,
-                        mode: "edit_source",
-                        channel: channel,
+        final ColorScheme colorScheme = Theme.of(context).colorScheme;
+        final Color itemColor = colorScheme.primaryContainer;
+
+        final List<Card> cards = <Card>[
+          for (int index = 0; index < boards.length; index += 1)
+            Card(
+              key: Key('$index'),
+              color: itemColor,
+              child: SizedBox(
+                height: 60,
+                width: 300,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        '${boards[index]["NAME"]}',
                       ),
-                    );
-                  },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        Map<String, dynamic> board = Map.of(boards[index]);
+                        board['ORIGINAL_NAME'] = board['NAME'];
+                        showDialog<void>(
+                          context: context,
+                          builder: (BuildContext context) => SourceSettings(
+                            board: board,
+                            mode: Message.editsource,
+                            conn: conn,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-    ];
+        ];
 
-    Widget proxyDecorator(
-      Widget child,
-      int index,
-      Animation<double> animation,
-    ) {
-      return AnimatedBuilder(
-        animation: animation,
-        builder: (BuildContext context, Widget? child) {
-          final double animValue = Curves.easeInOutCubicEmphasized.transform(
-            animation.value,
-          );
-          final double scale = lerpDouble(1, 1.02, animValue)!;
-          return Transform.scale(
-            scale: scale,
-            child: SizedBox(
-              width: 300, // Keep the width same as original cards
-              child:
-                  child, // Use the passed-in child widget directly, NOT cards[index]
-            ),
-          );
-        },
-        child: child, // Pass the proxy child here to retain constraints
-      );
-    }
-
-    return Scaffold(
-      body: Center(
-        child: SizedBox(
-          width: 300,
-          child: ReorderableListView(
-            shrinkWrap: true,
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            proxyDecorator: proxyDecorator,
-            onReorder: (int oldIndex, int newIndex) {
-              setState(() {
-                if (oldIndex < newIndex) {
-                  newIndex -= 1;
-                }
-                final item = boards.removeAt(oldIndex);
-                boards.insert(newIndex, item);
-              });
-              List<dynamic> names = boards
-                  .map((board) => board['name'] as String)
-                  .toList();
-              final message = {'Type': "reorder_sources", 'Value': names};
-              final jsonString = jsonEncode(message);
-              channel?.sink.add(jsonString);
+        Widget proxyDecorator(
+          Widget child,
+          int index,
+          Animation<double> animation,
+        ) {
+          return AnimatedBuilder(
+            animation: animation,
+            builder: (BuildContext context, Widget? child) {
+              final double animValue = Curves.easeInOutCubicEmphasized
+                  .transform(animation.value);
+              final double scale = lerpDouble(1, 1.02, animValue)!;
+              return Transform.scale(
+                scale: scale,
+                child: SizedBox(width: 300, child: child),
+              );
             },
-            children: cards,
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Map<String, String> newBoard = {
-            'NAME': "",
-            'URL': "",
-            'API_PARAMS': "",
-            'TAG_KEY': "",
-            'API_KEY': "",
-            'LOGIN': "",
-          };
-          showDialog<void>(
-            context: context,
-            builder: (BuildContext context) => SourceSettings(
-              board: newBoard,
-              mode: "create_source",
-              channel: channel,
-            ),
+            child: child,
           );
-        },
-        tooltip: 'Add Source',
-        child: const Icon(Icons.add),
-      ),
+        }
+
+        return Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 300,
+              child: ReorderableListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                proxyDecorator: proxyDecorator,
+                onReorder: (int oldIndex, int newIndex) {
+                  setState(() {
+                    if (oldIndex < newIndex) {
+                      newIndex -= 1;
+                    }
+                    final item = boards.removeAt(oldIndex);
+                    boards.insert(newIndex, item);
+                  });
+                  List<dynamic> names = boards
+                      .map((board) => board['NAME'] as String)
+                      .toList();
+                  conn.send(Message.reordersources, names);
+                },
+                children: cards,
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              Map<String, String> newBoard = {
+                'NAME': "",
+                'URL': "",
+                'API_PARAMS': "",
+                'TAG_KEY': "",
+                'API_KEY': "",
+                'LOGIN': "",
+              };
+              showDialog<void>(
+                context: context,
+                builder: (BuildContext context) => SourceSettings(
+                  board: newBoard,
+                  mode: Message.createsource,
+                  conn: conn,
+                ),
+              );
+            },
+            tooltip: 'Add Source',
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

@@ -26,10 +26,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
 
     ref.listenManual<AsyncValue<Conn>>(connProvider, (prev, next) {
       next.whenData((conn) {
-        debugPrint("connProvider heard");
-        final msg = {"Type": Message.counter.index};
-        debugPrint(jsonEncode(msg));
-        conn.send(jsonEncode(msg));
+        conn.send(Message.counter, "");
       });
     });
   }

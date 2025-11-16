@@ -66,22 +66,13 @@ class _TextInput extends ConsumerState<TextInput> {
         setState(() {
           _priorText = _textController.text;
         });
-
-        final message = {
-          "Type": Message.autosuggest.index,
-          "Value": _textController.text,
-        };
-        conn.send(jsonEncode(message));
+        conn.send(Message.autosuggest, _textController.text);
       }
     });
   }
 
   void _sendQuery() {
-    final message = {
-      "Type": Message.userquery.index,
-      "Value": _textController.text,
-    };
-    conn.send(jsonEncode(message));
+    conn.send(Message.userquery, _textController.text);
     _textController.text = "";
     _updateVisibilityChange();
   }

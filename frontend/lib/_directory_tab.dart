@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:file_selector/file_selector.dart';
 
-class DirectorySettings extends StatelessWidget {
-  const DirectorySettings({super.key});
+import '_conf.dart' show configProvider;
+
+class DirectoryTab extends ConsumerWidget {
+  const DirectoryTab({super.key});
 
   Future<void> _getDirectoryPath(BuildContext context) async {
     const String confirmButtonText = 'Choose';
@@ -23,60 +26,67 @@ class DirectorySettings extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    var config = context.watch<Map<String, dynamic>>();
-    var dirs = config['DIRS'];
+  Widget build(BuildContext context, WidgetRef ref) {
+    AsyncValue<Map<String, dynamic>> config = ref.watch(configProvider);
 
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final Color itemColor = colorScheme.primaryContainer;
+    return config.when(
+      loading: () => const CircularProgressIndicator(),
+      error: (err, stack) => Text('Error: $err'),
+      data: (config) {
+        var dirs = config['DIRS'];
 
-    final List<Card> cards = <Card>[
-      for (int index = 0; index < dirs.length; index += 1)
-        Card(
-          key: Key('$index'),
-          color: itemColor,
-          child: SizedBox(
-            height: 60,
-            width: 600,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    '${dirs[index]}',
-                  ),
-                ),
-                IconButton(icon: const Icon(Icons.edit), onPressed: () {}),
-              ],
-            ),
-          ),
-        ),
-    ];
+        final ColorScheme colorScheme = Theme.of(context).colorScheme;
+        final Color itemColor = colorScheme.primaryContainer;
 
-    return Scaffold(
-      body: Center(
-        child: cards.isEmpty
-            ? const Text('Please add a directory to index.')
-            : SizedBox(
+        final List<Card> cards = <Card>[
+          for (int index = 0; index < dirs.length; index += 1)
+            Card(
+              key: Key('$index'),
+              color: itemColor,
+              child: SizedBox(
+                height: 60,
                 width: 600,
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  children: cards,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        '${dirs[index]}',
+                      ),
+                    ),
+                    IconButton(icon: const Icon(Icons.edit), onPressed: () {}),
+                  ],
                 ),
               ),
-      ),
+            ),
+        ];
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _getDirectoryPath(context);
-        },
-        tooltip: 'Add Directory',
-        child: const Icon(Icons.add),
-      ),
+        return Scaffold(
+          body: Center(
+            child: cards.isEmpty
+                ? const Text('Please add a directory to index.')
+                : SizedBox(
+                    width: 600,
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      children: cards,
+                    ),
+                  ),
+          ),
+
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              _getDirectoryPath(context);
+            },
+            tooltip: 'Add Directory',
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

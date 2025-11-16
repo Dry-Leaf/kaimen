@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert' show jsonDecode;
+import 'dart:convert' show jsonDecode, jsonEncode;
 import 'dart:async' show StreamController;
 
 import 'dart:io' show exit;
@@ -60,10 +60,12 @@ class Conn {
     );
   }
 
-  void send(String message) {
+  void send(Message type, dynamic value) {
     debugPrint("About to send");
-    debugPrint(message);
-    channel.sink.add(message);
+    final toSend = {'Type': type.index, 'Value': value};
+    final jsonString = jsonEncode(toSend);
+    debugPrint(jsonString);
+    channel.sink.add(jsonString);
   }
 
   void dispose() {
