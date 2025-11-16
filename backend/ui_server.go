@@ -26,6 +26,7 @@ const (
 	createsource
 	editsource
 	reordersources
+	getconf
 )
 
 var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
@@ -120,6 +121,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			}
 
 			resp := message{Type: qcomplete, Value: len(nams) - 2}
+			wsjson.Write(ctx, c, resp)
+		case getconf:
+			conf := gather_conf()
+			resp := message{Type: getconf, Value: conf}
 			wsjson.Write(ctx, c, resp)
 		case createsource, editsource, reordersources:
 			Edit_conf(req.Type, req.Value)

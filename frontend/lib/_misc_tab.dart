@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '_conf.dart' show configProvider;
+import '_backend_conn.dart' show Message, messageByTypeProvider;
 
 class MiscTab extends ConsumerStatefulWidget {
   const MiscTab({super.key});
@@ -15,7 +15,9 @@ class _MiscTabState extends ConsumerState<MiscTab> {
 
   @override
   Widget build(BuildContext context) {
-    AsyncValue<Map<String, dynamic>> config = ref.watch(configProvider);
+    AsyncValue<dynamic> config = ref.watch(
+      messageByTypeProvider(Message.getconf),
+    );
 
     return config.when(
       loading: () => const CircularProgressIndicator(),

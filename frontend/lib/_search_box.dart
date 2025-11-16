@@ -123,15 +123,11 @@ class _TextInput extends ConsumerState<TextInput> {
     autosuggestMessage.when(
       data: (msg) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (msg['Value'] != null) {
-            final parsed = (msg['Value'] as List)
-                .map((e) => Suggestion.fromJson(e))
-                .toList();
+          final parsed = (msg as List)
+              .map((e) => Suggestion.fromJson(e))
+              .toList();
 
-            _suggestions.value = parsed;
-          } else {
-            _suggestions.value = [];
-          }
+          _suggestions.value = parsed;
         });
       },
       loading: () {},

@@ -34,7 +34,7 @@ class UI extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      initialRoute: '/',
+      initialRoute: '/settings',
       routes: {
         '/': (context) => const SearchPage(title: 'Search Page'),
         '/settings': (context) => SettingsPage(),
