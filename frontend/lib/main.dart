@@ -3,7 +3,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '_search_page.dart' show SearchPage;
-//import '_settings_page.dart' show SettingsPage;
+import '_settings_page.dart' show SettingsPage;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +37,7 @@ class UI extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SearchPage(title: 'Search Page'),
-        //'/settings': (context) => SettingsPage(),
+        '/settings': (context) => SettingsPage(),
       },
     );
   }

@@ -58,7 +58,6 @@ func Edit_conf(mode MessageType, data any) {
 
 	switch mode {
 	case createsource:
-		fmt.Println("fucvk")
 		cast_data := data.(map[string]interface{})
 		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),

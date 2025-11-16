@@ -95,14 +95,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("MESSAGE RECEIVED")
 		fmt.Println(req)
-		fmt.Println(req.Type)
 
 		switch req.Type {
 		case counter:
 			file_count := strconv.Itoa(get_count())
 			resp := message{Type: counter, Value: file_count}
-			fmt.Println("SENDING RESPONSE")
-			fmt.Println(resp)
 			wsjson.Write(ctx, c, resp)
 		case autosuggest:
 			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.(string)), "-")
@@ -125,7 +122,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			resp := message{Type: qcomplete, Value: len(nams) - 2}
 			wsjson.Write(ctx, c, resp)
 		case createsource, editsource, reordersources:
-			fmt.Println(req.Type)
 			Edit_conf(req.Type, req.Value)
 		default:
 			fmt.Println(req.Value)
