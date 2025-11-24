@@ -133,6 +133,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                           SnackBar(content: Text('Invalid data: $e')),
                         );
                       }
+                      Navigator.of(context, rootNavigator: true).pop('dialog');
                     },
                     child: const Text('Save'),
                   ),

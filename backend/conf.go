@@ -57,8 +57,11 @@ func Edit_conf(mode MessageType, data any) {
 	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
+	update_front := false
+
 	switch mode {
 	case createsource:
+		update_front = true
 		cast_data := data.(map[string]interface{})
 		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
@@ -66,7 +69,31 @@ func Edit_conf(mode MessageType, data any) {
 		}
 		conf.Boards = append(conf.Boards, new_source)
 	case editsource:
+		update_front = true
+		cast_data := data.(map[string]interface{})
+		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
+			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
+			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
+		}
+		for i, b := range conf.Boards {
+			if b.NAME == cast_data["ORIGINAL_NAME"] {
+				conf.Boards[i] = new_source
+				break
+			}
+		}
 	case reordersources:
+		cast_data := data.([]interface{})
+		for x, n := range cast_data {
+			for y, o := range conf.Boards[x:] {
+				if n == o.NAME {
+					temp_source := conf.Boards[x]
+					conf.Boards[x] = o
+					conf.Boards[x+y] = temp_source
+					break
+				}
+			}
+		}
+		fmt.Println(conf.Boards)
 	}
 
 	buf := new(bytes.Buffer)
@@ -77,7 +104,10 @@ func Edit_conf(mode MessageType, data any) {
 
 	confMu.Unlock()
 	Read_conf()
-	update(updateconf)
+
+	if update_front {
+		update(updateconf)
+	}
 }
 
 func Read_conf() {
@@ -133,9 +163,12 @@ func Read_conf() {
 	home_dir, err := os.UserHomeDir()
 	Err_check(err)
 
+	Dirs = nil
+	fmt.Println(Dirs)
 	for _, dir := range conf.Dirs {
 		Dirs = append(Dirs, filepath.Join(home_dir, dir))
 	}
+	fmt.Println(Dirs)
 
 	confMu.Unlock()
 	for _, booru := range Sources {
