@@ -64,7 +64,9 @@ func update(mode MessageType) {
 		file_count := strconv.Itoa(get_count())
 		resp = message{Type: counter, Value: file_count}
 	case updateconf:
-		resp = message{Type: updateconf, Value: ""}
+		conf := gather_conf()
+		resp := message{Type: getconf, Value: conf}
+		wsjson.Write(ctx, c, resp)
 	}
 
 	err := wsjson.Write(ctx, c, resp)
