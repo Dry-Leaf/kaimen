@@ -29,7 +29,18 @@ var (
 	writeMu sync.Mutex
 )
 
-func initial_crawl(path string, d fs.DirEntry, err error) error {
+func initial_crawl() {
+	confMu.Lock()
+	for _, dir := range Dirs {
+		go func() {
+			filepath.WalkDir(dir, index)
+			dir_watch(dir)
+		}()
+	}
+	confMu.Unlock()
+}
+
+func index(path string, d fs.DirEntry, err error) error {
 	if err != nil {
 		return err
 	}

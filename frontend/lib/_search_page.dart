@@ -22,17 +22,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final counterMessage = ref.watch(messageByTypeProvider(Message.counter));
 
     ref.listenManual<AsyncValue<Conn>>(
       connProvider,
       (prev, next) => next.whenData((c) => c.send(Message.counter, '')),
       fireImmediately: true,
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final counterMessage = ref.watch(messageByTypeProvider(Message.counter));
 
     return Scaffold(
       resizeToAvoidBottomInset: false,

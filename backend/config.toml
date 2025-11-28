@@ -1,7 +1,7 @@
 # Kaimen Configuration
 
 # Comma seperated directories to index
-DIRS = [ 'Documents\code\compiled\go\kaimen\backend\test_images', 'Documents\code\compiled\go\kaimen\backend\test_images2' ]
+DIRS = [ ]
 
 # Add account credentials if need be (ToDo: document this)
 [[boards]]
