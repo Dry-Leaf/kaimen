@@ -3,10 +3,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:file_selector/file_selector.dart';
 
-import '_backend_conn.dart' show Message, messageByTypeProvider;
+import '_backend_conn.dart'
+    show Conn, Message, messageByTypeProvider, connProvider;
 
-class DirectoryTab extends ConsumerWidget {
+class DirectoryTab extends ConsumerStatefulWidget {
   const DirectoryTab({super.key});
+
+  @override
+  ConsumerState<DirectoryTab> createState() => _DirectoryTabState();
+}
+
+class _DirectoryTabState extends ConsumerState<DirectoryTab> {
+  late final Conn conn;
+
+  @override
+  void initState() {
+    super.initState();
+
+    conn = ref
+        .read(connProvider)
+        .maybeWhen(
+          data: (conn) => conn,
+          orElse: () => throw Exception('Connection not ready'),
+        );
+  }
 
   Future<void> _getDirectoryPath(BuildContext context) async {
     const String confirmButtonText = 'Choose';
@@ -18,15 +38,12 @@ class DirectoryTab extends ConsumerWidget {
       return;
     }
     if (context.mounted) {
-      await showDialog<void>(
-        context: context,
-        builder: (BuildContext context) => TextDisplay(directoryPath),
-      );
+      conn.send(Message.newdirectory, directoryPath);
     }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     AsyncValue<dynamic> config = ref.watch(
       messageByTypeProvider(Message.getconf),
     );
@@ -58,22 +75,37 @@ class DirectoryTab extends ConsumerWidget {
                 height: 60,
                 width: 600,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Flexible(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12.0,
-                        ), // Adjust as needed
-                        child: Text(
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          '${dirs[index]}',
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                        child: Tooltip(
+                          message: '${dirs[index]}',
+                          child: Text(
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            '${dirs[index]}',
+                          ),
                         ),
                       ),
                     ),
-                    IconButton(icon: const Icon(Icons.edit), onPressed: () {}),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () {
+                            _getDirectoryPath(context);
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            _getDirectoryPath(context);
+                          },
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -103,22 +135,6 @@ class DirectoryTab extends ConsumerWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Widget that displays a text file in a dialog
-class TextDisplay extends StatelessWidget {
-  const TextDisplay(this.directoryPath, {super.key});
-  final String directoryPath;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Selected Directory'),
-      content: Scrollbar(
-        child: SingleChildScrollView(child: Text(directoryPath)),
-      ),
     );
   }
 }

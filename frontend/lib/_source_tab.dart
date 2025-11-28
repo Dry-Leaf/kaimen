@@ -64,20 +64,39 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
                         '${boards[index]["NAME"]}',
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        Map<String, dynamic> board = Map.of(boards[index]);
-                        board['ORIGINAL_NAME'] = board['NAME'];
-                        showDialog<void>(
-                          context: context,
-                          builder: (BuildContext context) => SourceSettings(
-                            board: board,
-                            mode: Message.editsource,
-                            conn: conn,
-                          ),
-                        );
-                      },
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit),
+                          onPressed: () {
+                            Map<String, dynamic> board = Map.of(boards[index]);
+                            board['ORIGINAL_NAME'] = board['NAME'];
+                            showDialog<void>(
+                              context: context,
+                              builder: (BuildContext context) => SourceSettings(
+                                board: board,
+                                mode: Message.editsource,
+                                conn: conn,
+                              ),
+                            );
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () {
+                            Map<String, dynamic> board = Map.of(boards[index]);
+                            board['ORIGINAL_NAME'] = board['NAME'];
+                            showDialog<void>(
+                              context: context,
+                              builder: (BuildContext context) => SourceSettings(
+                                board: board,
+                                mode: Message.editsource,
+                                conn: conn,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

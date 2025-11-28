@@ -28,14 +28,7 @@ func main() {
 		new_db()
 	}
 
-	confMu.Lock()
-	for _, dir := range Dirs {
-		go func() {
-			filepath.WalkDir(dir, initial_crawl)
-		}()
-		go dir_watch(dir)
-	}
-	confMu.Unlock()
+	initial_crawl()
 
 	go dequeue()
 	go server()

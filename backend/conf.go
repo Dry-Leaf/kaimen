@@ -42,6 +42,30 @@ func gather_conf() Config {
 	return Config{Boards: Sources, Dirs: Dirs}
 }
 
+func Source_process(conf Config) {
+	Dirs = conf.Dirs
+	Sources = conf.Boards
+
+	err := godotenv.Load(".env")
+	Err_check(err)
+
+	for i := range Sources {
+		booru := &Sources[i]
+
+		booru.TAG_REGEX = regexp.MustCompile(`"` + booru.TAG_KEY + `":"([^"]*)?`)
+		if booru.API_PARAMS != "" {
+			login := os.Getenv(booru.NAME + "_LOGIN")
+			api_key := os.Getenv(booru.NAME + "_API_KEY")
+
+			if login == "" || api_key == "" {
+				booru.API_PARAMS = ""
+			} else {
+				booru.API_PARAMS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
+			}
+		}
+	}
+}
+
 func Edit_conf(mode MessageType, data any) {
 	var conf Config
 
@@ -94,6 +118,15 @@ func Edit_conf(mode MessageType, data any) {
 			}
 		}
 		fmt.Println(conf.Boards)
+	case newdirectory:
+		update_front = true
+		cast_data := data.(string)
+		conf.Dirs = append(conf.Dirs, cast_data)
+
+		go func() {
+			filepath.WalkDir(cast_data, index)
+			dir_watch(cast_data)
+		}()
 	}
 
 	buf := new(bytes.Buffer)
@@ -102,8 +135,9 @@ func Edit_conf(mode MessageType, data any) {
 	err = os.WriteFile(conf_path, buf.Bytes(), 0644)
 	Err_check(err)
 
+	Source_process(conf)
+
 	confMu.Unlock()
-	Read_conf()
 
 	if update_front {
 		update(updateconf)
@@ -136,39 +170,9 @@ func Read_conf() {
 	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
-	fmt.Println("CONF READ")
-	fmt.Println(conf)
+	Source_process(conf)
 
-	Sources = conf.Boards
-
-	err = godotenv.Load(".env")
-	Err_check(err)
-
-	for i := range Sources {
-		booru := &Sources[i]
-
-		booru.TAG_REGEX = regexp.MustCompile(`"` + booru.TAG_KEY + `":"([^"]*)?`)
-		if booru.API_PARAMS != "" {
-			login := os.Getenv(booru.NAME + "_LOGIN")
-			api_key := os.Getenv(booru.NAME + "_API_KEY")
-
-			if login == "" || api_key == "" {
-				booru.API_PARAMS = ""
-			} else {
-				booru.API_PARAMS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
-			}
-		}
-	}
-
-	home_dir, err := os.UserHomeDir()
-	Err_check(err)
-
-	Dirs = nil
-	fmt.Println(Dirs)
-	for _, dir := range conf.Dirs {
-		Dirs = append(Dirs, filepath.Join(home_dir, dir))
-	}
-	fmt.Println(Dirs)
+	Dirs = conf.Dirs
 
 	confMu.Unlock()
 	for _, booru := range Sources {

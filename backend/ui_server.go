@@ -29,6 +29,8 @@ const (
 	createsource
 	editsource
 	reordersources
+	newdirectory
+	editdirectory
 	getconf
 )
 
@@ -131,7 +133,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			conf := gather_conf()
 			resp := message{Type: getconf, Value: conf}
 			wsjson.Write(ctx, c, resp)
-		case createsource, editsource, reordersources:
+		case createsource, editsource, reordersources, newdirectory:
 			Edit_conf(req.Type, req.Value)
 		default:
 			fmt.Println(req.Value)
