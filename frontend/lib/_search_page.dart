@@ -1,11 +1,49 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show exit;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
 import '_search_box.dart' show SearchBox;
 import '_digit_row.dart' show DigitRow;
+
+class IndexingBox extends ConsumerStatefulWidget {
+  const IndexingBox({super.key, required this.indexingList});
+
+  final List<String> indexingList;
+
+  @override
+  ConsumerState<IndexingBox> createState() => _IndexingBoxState();
+}
+
+class _IndexingBoxState extends ConsumerState<IndexingBox> {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 550,
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          Align(
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Indexing"),
+                SizedBox(width: 8),
+                SpinKitThreeBounce(color: Colors.grey, size: 10.0),
+              ],
+            ),
+          ),
+          ...widget.indexingList.map((e) {
+            return Padding(padding: const EdgeInsets.all(8.0), child: Text(e));
+          }),
+        ],
+      ),
+    );
+  }
+}
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, required this.title});
@@ -28,11 +66,9 @@ class _SearchPageState extends ConsumerState<SearchPage> {
   Widget build(BuildContext context) {
     final counterMessage = ref.watch(messageByTypeProvider(Message.counter));
 
-    ref.listenManual<AsyncValue<Conn>>(
-      connProvider,
-      (prev, next) => next.whenData((c) => c.send(Message.counter, '')),
-      fireImmediately: true,
-    );
+    ref.listen<AsyncValue<Conn>>(connProvider, (prev, next) {
+      next.whenData((c) => c.send(Message.counter, ''));
+    });
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -51,15 +87,45 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         loading: () => Center(child: CircularProgressIndicator()),
         error: (err, _) => Text('Error: $err'),
         data: (msg) {
-          _counter = msg;
+          _counter = msg[0];
+          debugPrint(_counter);
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                SizedBox(width: 550, child: SearchBox()),
-                SizedBox(height: 40),
-                SizedBox(height: 150, child: DigitRow(_counter.toString())),
-                SizedBox(height: 60),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(width: 550, child: SearchBox()),
+                    SizedBox(height: 40),
+                    SizedBox(height: 150, child: DigitRow(_counter.toString())),
+                    SizedBox(height: 60),
+                  ],
+                ),
+                if (msg[1] != null)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Transform.translate(
+                      offset: const Offset(0, -16),
+                      child: SizedBox(
+                        height: 120,
+                        child: IndexingBox(indexingList: msg[1].cast<String>()),
+                      ),
+                    ),
+                  ),
+                if (!msg[2])
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Transform.translate(
+                      offset: const Offset(0, -16),
+                      child: SizedBox(
+                        height: 120,
+                        child: Text(
+                          "No directories being watched. Add one in the settings.",
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           );

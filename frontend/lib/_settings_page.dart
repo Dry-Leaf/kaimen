@@ -33,6 +33,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
+      animationDuration: Duration.zero,
       length: 3,
       child: Scaffold(
         appBar: AppBar(

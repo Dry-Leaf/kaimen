@@ -35,9 +35,24 @@ class UI extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
       initialRoute: '/',
-      routes: {
-        '/': (context) => const SearchPage(title: 'Search Page'),
-        '/settings': (context) => SettingsPage(),
+      onGenerateRoute: (settings) {
+        Widget page;
+        switch (settings.name) {
+          case '/':
+            page = const SearchPage(title: 'Search Page');
+            break;
+          case '/settings':
+            page = SettingsPage();
+            break;
+          default:
+            return null;
+        }
+
+        return PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => page,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        );
       },
     );
   }
