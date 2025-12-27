@@ -6,11 +6,18 @@
 
 # Building
 
-Linux, requires libfuse-dev
+## Requirments 
+- go
+- Flutter
+- gcc
 
-Windows requires WinFsp
+### Linux
+- libfuse-dev
 
-Windows compilation
+### Windows
+- WinFsp
+
+### Windows compilation
 
 $env:CGO_CFLAGS = "\`"-IC:\Program Files (x86)\WinFsp\inc\fuse\`""
 > adjust according to installation location of WinFSP

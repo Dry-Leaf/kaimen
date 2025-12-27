@@ -120,13 +120,11 @@ func Edit_conf(mode MessageType, data any) {
 		fmt.Println(conf.Boards)
 	case newdirectory:
 		update_front = true
-		cast_data := data.(string)
-		conf.Dirs = append(conf.Dirs, cast_data)
+		dir := data.(string)
+		conf.Dirs = append(conf.Dirs, dir)
+		Dirs = conf.Dirs
 
-		go func() {
-			filepath.WalkDir(cast_data, index)
-			dir_watch(cast_data)
-		}()
+		go crawl(dir)
 	}
 
 	buf := new(bytes.Buffer)

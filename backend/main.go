@@ -28,6 +28,7 @@ func main() {
 		new_db()
 	}
 
+	indexing = make(map[string]bool)
 	initial_crawl()
 
 	go dequeue()

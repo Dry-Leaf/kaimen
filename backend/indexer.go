@@ -26,18 +26,35 @@ const (
 var (
 	supported = [...]string{"image/jpeg", "image/png", "image/gif", "image/jxl",
 		"video/mp4", "video/webm"}
-	writeMu sync.Mutex
+	writeMu  sync.Mutex
+	indexMu  sync.Mutex
+	indexing map[string]bool
 )
 
 func initial_crawl() {
 	confMu.Lock()
 	for _, dir := range Dirs {
-		go func() {
-			filepath.WalkDir(dir, index)
-			dir_watch(dir)
-		}()
+		go crawl(dir)
 	}
 	confMu.Unlock()
+}
+
+func crawl(dir string) {
+	indexMu.Lock()
+	indexing[dir] = true
+	indexMu.Unlock()
+
+	update(counter)
+
+	filepath.WalkDir(dir, index)
+
+	indexMu.Lock()
+	delete(indexing, dir)
+	indexMu.Unlock()
+
+	update(counter)
+
+	dir_watch(dir)
 }
 
 func index(path string, d fs.DirEntry, err error) error {

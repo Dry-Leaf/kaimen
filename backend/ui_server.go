@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"maps"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -63,12 +65,17 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
+		fmt.Println("sending counter")
 		file_count := strconv.Itoa(get_count())
-		resp = message{Type: counter, Value: file_count}
+		indexMu.Lock()
+		keys := slices.Sorted(maps.Keys(indexing))
+		indexMu.Unlock()
+		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0}}
 	case updateconf:
 		conf := gather_conf()
-		resp := message{Type: getconf, Value: conf}
-		wsjson.Write(ctx, c, resp)
+		resp = message{Type: getconf, Value: conf}
+		err := wsjson.Write(ctx, c, resp)
+		Err_check(err)
 	}
 
 	err := wsjson.Write(ctx, c, resp)
@@ -107,8 +114,14 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		switch req.Type {
 		case counter:
 			file_count := strconv.Itoa(get_count())
-			resp := message{Type: counter, Value: file_count}
-			wsjson.Write(ctx, c, resp)
+			fmt.Println(file_count)
+			indexMu.Lock()
+			keys := slices.Sorted(maps.Keys(indexing))
+			indexMu.Unlock()
+			fmt.Println(keys)
+			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0}}
+			err := wsjson.Write(ctx, c, resp)
+			Err_check(err)
 		case autosuggest:
 			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.(string)), "-")
 
@@ -118,7 +131,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			}
 			resp := message{Type: autosuggest, Value: results}
 
-			wsjson.Write(ctx, c, resp)
+			err := wsjson.Write(ctx, c, resp)
+			Err_check(err)
 		case userquery:
 			if len(req.Value.(string)) > 0 {
 				nams = append([]string{".", ".."}, query(req.Value.(string))...)
