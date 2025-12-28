@@ -8,6 +8,41 @@ import '_backend_conn.dart'
 import '_search_box.dart' show SearchBox;
 import '_digit_row.dart' show DigitRow;
 
+class ResultCounter extends ConsumerStatefulWidget {
+  const ResultCounter({super.key});
+
+  @override
+  ConsumerState<ResultCounter> createState() => _ResultCounterState();
+}
+
+class _ResultCounterState extends ConsumerState<ResultCounter> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final resultCounter = ref.watch(messageByTypeProvider(Message.qcomplete));
+
+    return resultCounter.when(
+      loading: () => SizedBox.shrink(),
+      error: (err, _) => Text('Error: $err'),
+      data: (msg) {
+        return TweenAnimationBuilder<double>(
+          key: ValueKey(msg[1]),
+          tween: Tween<double>(begin: 1.0, end: 0.0),
+          curve: Curves.ease,
+          duration: const Duration(seconds: 3),
+          builder: (BuildContext context, double opacity, Widget? child) {
+            return Opacity(opacity: opacity, child: Text("${msg[0]} Results"));
+          },
+        );
+      },
+    );
+  }
+}
+
 class IndexingBox extends ConsumerStatefulWidget {
   const IndexingBox({super.key, required this.indexingList});
 
@@ -101,6 +136,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                     SizedBox(height: 150, child: DigitRow(_counter.toString())),
                     SizedBox(height: 60),
                   ],
+                ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: Transform.translate(
+                    offset: const Offset(0, 180),
+                    child: ResultCounter(),
+                  ),
                 ),
                 if (msg[1] != null)
                   Align(

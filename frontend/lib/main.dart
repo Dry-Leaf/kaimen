@@ -16,16 +16,34 @@ void main() async {
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.hidden,
   );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
+  windowManager.waitUntilReadyToShow(windowOptions, () async {});
 
   runApp(ProviderScope(child: const UI()));
 }
 
-class UI extends StatelessWidget {
+class UI extends StatefulWidget {
   const UI({super.key});
+
+  @override
+  State<UI> createState() => _UIState();
+}
+
+class _UIState extends State<UI> {
+  bool _windowShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // This callback runs after the first frame is rendered
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!_windowShown) {
+        _windowShown = true;
+        await windowManager.show();
+        await windowManager.focus();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
