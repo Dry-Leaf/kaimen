@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"math/rand/v2"
 	"net"
 	"net/http"
 	"os"
@@ -138,10 +139,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				nams = append([]string{".", ".."}, query(req.Value.(string))...)
 				empty_query = false
 			} else {
-				empty_query = true
+				nams = append([]string{".", ".."}, query_recent()...)
 			}
 
-			resp := message{Type: qcomplete, Value: len(nams) - 2}
+			resp := message{Type: qcomplete, Value: []int{len(nams) - 2, rand.IntN(10000)}}
 			wsjson.Write(ctx, c, resp)
 		case getconf:
 			conf := gather_conf()
