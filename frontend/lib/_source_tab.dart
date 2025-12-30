@@ -112,8 +112,9 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
           return AnimatedBuilder(
             animation: animation,
             builder: (BuildContext context, Widget? child) {
-              final double animValue = Curves.easeInOutCubicEmphasized
-                  .transform(animation.value);
+              final double animValue = Curves.fastOutSlowIn.transform(
+                animation.value,
+              );
               final double scale = lerpDouble(1, 1.02, animValue)!;
               return Transform.scale(
                 scale: scale,
