@@ -33,7 +33,7 @@ class _ResultCounterState extends ConsumerState<ResultCounter> {
           key: ValueKey(msg[1]),
           tween: Tween<double>(begin: 1.0, end: 0.0),
           curve: Curves.ease,
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 2),
           builder: (BuildContext context, double opacity, Widget? child) {
             return Opacity(opacity: opacity, child: Text("${msg[0]} Results"));
           },

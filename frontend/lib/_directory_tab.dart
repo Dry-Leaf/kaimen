@@ -90,21 +90,17 @@ class _DirectoryTabState extends ConsumerState<DirectoryTab> {
                         ),
                       ),
                     ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            _getDirectoryPath(context);
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () {
-                            _getDirectoryPath(context);
-                          },
-                        ),
-                      ],
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          conn.send(Message.deletedirectory, [
+                            '${dirs[index]}',
+                            index,
+                          ]);
+                        },
+                      ),
                     ),
                   ],
                 ),

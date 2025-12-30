@@ -18,6 +18,7 @@ enum Message {
   editsource,
   reordersources,
   newdirectory,
+  deletedirectory,
   editdirectory,
   getconf,
 }

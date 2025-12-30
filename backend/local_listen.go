@@ -39,6 +39,7 @@ func (s *SafeMap) IsEmpty() bool {
 
 var pending_create SafeMap
 var pending_remove SafeMap
+var watch_kill sync.Map
 
 func dequeue() {
 	interval := time.Minute
@@ -99,6 +100,11 @@ func dir_watch(dir string) {
 
 	for {
 		ei := <-c
+
+		if _, loaded := watch_kill.LoadAndDelete(dir); loaded {
+			fmt.Printf("%s deleted\n", dir)
+			break
+		}
 
 		switch ei.Event() {
 		case notify.Create:

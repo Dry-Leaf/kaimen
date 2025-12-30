@@ -125,6 +125,19 @@ func Edit_conf(mode MessageType, data any) {
 		Dirs = conf.Dirs
 
 		go crawl(dir)
+	case deletedirectory:
+		update_front = true
+		inputs := data.([]interface{})
+		dir := inputs[0].(string)
+		i := int(inputs[1].(float64))
+
+		conf.Dirs[i] = conf.Dirs[len(conf.Dirs)-1]
+		conf.Dirs = conf.Dirs[:len(conf.Dirs)-1]
+
+		Dirs = conf.Dirs
+
+		watch_kill.Store(dir, struct{}{})
+		update(counter)
 	}
 
 	buf := new(bytes.Buffer)
