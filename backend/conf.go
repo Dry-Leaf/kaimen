@@ -30,6 +30,7 @@ type SOURCE struct {
 }
 
 //go:embed config.toml
+//go:embed most_common_tags.sql
 var embedFS embed.FS
 
 var (

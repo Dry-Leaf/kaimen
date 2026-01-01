@@ -40,7 +40,7 @@ const (
 
 	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
 		ON CONFLICT(name)
-		DO UPDATE SET freq = freq + 1 RETURNING freq;`
+		DO UPDATE SET freq = freq + 1 RETURNING freq, category;`
 
 	tag_decrement = `CREATE TRIGGER tag_decrement
 		AFTER DELETE ON file_tags
@@ -292,23 +292,39 @@ func insert_metadata(md5sum, path, ext string, tags []string) {
 	new_tag_stmt, err := tx.Prepare(new_tag)
 	Err_check(err)
 
+	fmt.Printf("%s tag cats \n", path)
+
 	for _, tag := range tags {
 		row := new_tag_stmt.QueryRow(tag)
 
 		var freq int
-		err := row.Scan(&freq)
+		var category int
+		err := row.Scan(&freq, &category)
 		Err_check(err)
 
 		if freq == 1 {
-			cat := get_tag_cat(tag)
-			if cat != 0 {
+			if category == 0 {
+				fmt.Printf("new tag %s\n", tag)
+				cat := get_tag_cat(tag)
+				if cat != 0 {
+					update_tag_stmt, err := tx.Prepare(update_tag_cat)
+					Err_check(err)
+					update_tag_stmt.Exec(cat, tag)
+				}
+			}
+			if category == -1 {
+				fmt.Printf("existing tag %s\n", tag)
 				update_tag_stmt, err := tx.Prepare(update_tag_cat)
 				Err_check(err)
-				update_tag_stmt.Exec(cat, tag)
+				update_tag_stmt.Exec(0, tag)
 			}
+		} else {
+			fmt.Printf("existing tag %s\n", tag)
 		}
 		new_relation_stmt.Exec(md5sum, tag)
 	}
+
+	fmt.Printf("%s tag cats finished \n", path)
 
 	insert_counter += 1
 
@@ -343,6 +359,12 @@ func new_db() {
 		Err_check(err)
 		statement.Exec()
 	}
+
+	most_common_tags, err := embedFS.ReadFile("most_common_tags.sql")
+	Err_check(err)
+
+	_, err = tx.Exec(string(most_common_tags))
+	Err_check(err)
 
 	tx.Commit()
 }

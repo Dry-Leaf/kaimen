@@ -127,14 +127,17 @@ func process(path, ext string) {
 		return
 	}
 
-	fmt.Println(md5sum)
+	fmt.Printf("process: %s, md5: %s \n", path, md5sum)
 
 	time.Sleep(7 * time.Second)
 
 	tags := get_tags(md5sum)
 	if tags != nil {
+		fmt.Printf("tags got for %s \n", path)
 		insert_metadata(md5sum, path, ext, tags)
 	}
+
+	fmt.Printf("%s finished \n", path)
 }
 
 type cat struct {
@@ -155,7 +158,24 @@ func get_tag_cat(tag string) int {
 	var dat []cat
 
 	err = json.Unmarshal(body, &dat)
-	Err_check(err)
+	counter := 2
+	for err != nil {
+		secs_to_wait := time.Duration(15 * counter)
+		time.Sleep(secs_to_wait * time.Second)
+		resp, err := http.Get(url)
+		Err_check(err)
+
+		body, err := io.ReadAll(resp.Body)
+		Err_check(err)
+
+		err = json.Unmarshal(body, &dat)
+		resp.Body.Close()
+
+		if counter > 16 {
+			return 0
+		}
+		counter *= 2
+	}
 
 	if len(dat) > 0 {
 		return dat[0].Category
