@@ -145,7 +145,7 @@ type cat struct {
 }
 
 func get_tag_cat(tag string) int {
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 	url := `https://danbooru.donmai.us/tags.json?search[name_matches]=` + tag
 
 	resp, err := http.Get(url)
