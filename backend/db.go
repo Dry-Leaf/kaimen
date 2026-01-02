@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -360,8 +363,11 @@ func new_db() {
 		statement.Exec()
 	}
 
-	most_common_tags, err := embedFS.ReadFile("most_common_tags.sql")
+	r, err := embedFS.ReadFile("most_common_tags.sql.gz")
 	Err_check(err)
+	r2, err := gzip.NewReader(bytes.NewReader(r))
+	defer r2.Close()
+	most_common_tags, err := io.ReadAll(r2)
 
 	_, err = tx.Exec(string(most_common_tags))
 	Err_check(err)
