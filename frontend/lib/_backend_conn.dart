@@ -12,6 +12,7 @@ enum Message {
   counter,
   autosuggest,
   updateconf,
+  updatestatus,
   userquery,
   qcomplete,
   createsource,
