@@ -27,6 +27,7 @@ const (
 	counter MessageType = iota
 	autosuggest
 	updateconf
+	updatestatus
 	userquery
 	qcomplete
 	createsource
@@ -76,8 +77,8 @@ func update(mode MessageType) {
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
-		err := wsjson.Write(ctx, c, resp)
-		Err_check(err)
+	case updatestatus:
+		resp = message{Type: updatestatus, Value: []interface{}{ustatus, rand.IntN(10000)}}
 	}
 
 	err := wsjson.Write(ctx, c, resp)
@@ -138,7 +139,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case userquery:
 			if len(req.Value.(string)) > 0 {
 				nams = append([]string{".", ".."}, query(req.Value.(string))...)
-				empty_query = false
+				initial_query = false
 			} else {
 				nams = append([]string{".", ".."}, query_recent()...)
 			}

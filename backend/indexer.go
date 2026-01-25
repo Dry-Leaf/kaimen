@@ -196,7 +196,9 @@ func get_tags(md5sum string) []string {
 
 		fmt.Println(url)
 		resp, err := http.Get(url)
-		Err_check(err)
+		if err != nil {
+			continue
+		}
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)

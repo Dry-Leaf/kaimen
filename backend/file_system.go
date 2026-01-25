@@ -14,8 +14,8 @@ const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 
 var result_map = make(map[string]string)
 var nams []string
-var search_nam = []string{".", "..", "search"}
-var empty_query = true
+var search_nam = []string{".", "..", "results"}
+var initial_query = true
 
 type KAIMEN_FS struct {
 	fuse.FileSystemBase
@@ -63,7 +63,7 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 	case "/":
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
-	case "/search":
+	case "/results":
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
 	default:
@@ -117,12 +117,12 @@ func (self *KAIMEN_FS) Readdir(path string,
 
 	var namp *[]string
 
-	if path != "/search" {
+	if path != "/results" {
 		namp = &search_nam
 	} else {
 		for {
 			if pending_remove.IsEmpty() {
-				if empty_query {
+				if initial_query {
 					nams = append([]string{".", ".."}, query_recent()...)
 				}
 				namp = &nams

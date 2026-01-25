@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,10 +38,25 @@ var (
 	Sources []SOURCE
 	Dirs    []string
 	confMu  sync.Mutex
+	ustatus bool
 )
 
 func gather_conf() Config {
 	return Config{Boards: Sources, Dirs: Dirs}
+}
+
+func validate_source(source SOURCE) bool {
+	url := source.URL
+	if source.API_PARAMS != "" {
+		url += source.API_PARAMS
+	}
+
+	fmt.Println(url)
+	_, err := http.Get(url)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func Source_process(conf Config) {
@@ -75,6 +91,8 @@ func Edit_conf(mode MessageType, data any) {
 	conf_path := filepath.Join(conf_dir, "kaimen", "config.toml")
 
 	confMu.Lock()
+	defer confMu.Unlock()
+
 	f, err := os.OpenFile(conf_path, os.O_WRONLY, 0666)
 	Err_check(err)
 	defer f.Close()
@@ -86,25 +104,46 @@ func Edit_conf(mode MessageType, data any) {
 
 	switch mode {
 	case createsource:
+		defer update(updatestatus)
+
 		update_front = true
 		cast_data := data.(map[string]interface{})
 		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
 		}
-		conf.Boards = append(conf.Boards, new_source)
+
+		result := validate_source(new_source)
+		if result {
+			ustatus = true
+			conf.Boards = append(conf.Boards, new_source)
+		} else {
+			ustatus = false
+			return
+		}
 	case editsource:
+		defer update(updatestatus)
+
 		update_front = true
 		cast_data := data.(map[string]interface{})
+
 		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
 		}
-		for i, b := range conf.Boards {
-			if b.NAME == cast_data["ORIGINAL_NAME"] {
-				conf.Boards[i] = new_source
-				break
+
+		result := validate_source(new_source)
+		if result {
+			ustatus = true
+			for i, b := range conf.Boards {
+				if b.NAME == cast_data["ORIGINAL_NAME"] {
+					conf.Boards[i] = new_source
+					break
+				}
 			}
+		} else {
+			ustatus = false
+			return
 		}
 	case reordersources:
 		cast_data := data.([]interface{})
@@ -148,8 +187,6 @@ func Edit_conf(mode MessageType, data any) {
 	Err_check(err)
 
 	Source_process(conf)
-
-	confMu.Unlock()
 
 	if update_front {
 		update(updateconf)

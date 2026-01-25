@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '_backend_conn.dart' show Conn, Message;
+import '_backend_conn.dart' show Conn, Message, messageByTypeProvider;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SourceSettings extends StatefulWidget {
+class SourceSettings extends ConsumerStatefulWidget {
   final Map<String, dynamic> board;
   final Message mode;
   final Conn conn;
@@ -14,18 +15,32 @@ class SourceSettings extends StatefulWidget {
   });
 
   @override
-  State<SourceSettings> createState() => _SourceSettingsState();
+  ConsumerState<SourceSettings> createState() => _SourceSettingsState();
 }
 
 /// Widget that displays a text file in a dialog
-class _SourceSettingsState extends State<SourceSettings> {
+class _SourceSettingsState extends ConsumerState<SourceSettings> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
+      next.whenData((status) {
+        final String msg;
+        if (status[0]) {
+          msg = "Changes successfully saved.";
+        } else {
+          msg = "Invalid input. Changes Discarded.";
+        }
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(content: Text(msg)),
+        );
+      });
+    });
+
     return AlertDialog(
       title: const Text('Source Settings'),
-      constraints: const BoxConstraints(maxWidth: 500.0, minWidth: 500.0),
       content: Form(
         key: _formKey,
         child: Column(
@@ -124,6 +139,7 @@ class _SourceSettingsState extends State<SourceSettings> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
+                      Navigator.of(context, rootNavigator: true).pop('dialog');
                       _formKey.currentState!.save();
                       try {
                         widget.conn.send(widget.mode, widget.board);
@@ -133,7 +149,6 @@ class _SourceSettingsState extends State<SourceSettings> {
                           SnackBar(content: Text('Invalid data: $e')),
                         );
                       }
-                      Navigator.of(context, rootNavigator: true).pop('dialog');
                     },
                     child: const Text('Save'),
                   ),
