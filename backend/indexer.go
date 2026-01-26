@@ -190,8 +190,8 @@ func get_tags(md5sum string) []string {
 
 	for _, booru := range Sources {
 		url := booru.URL + md5sum
-		if booru.API_PARAMS != "" {
-			url += booru.API_PARAMS
+		if booru.API_QS != "" {
+			url += booru.API_QS
 		}
 
 		fmt.Println(url)

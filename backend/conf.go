@@ -12,7 +12,6 @@ import (
 	"sync"
 
 	"github.com/BurntSushi/toml"
-	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -24,6 +23,7 @@ type SOURCE struct {
 	NAME       string
 	URL        string
 	API_PARAMS string
+	API_QS     string
 	TAG_KEY    string
 	TAG_REGEX  *regexp.Regexp
 	LOGIN      string
@@ -45,10 +45,10 @@ func gather_conf() Config {
 	return Config{Boards: Sources, Dirs: Dirs}
 }
 
-func validate_source(source SOURCE) bool {
-	url := source.URL
-	if source.API_PARAMS != "" {
-		url += source.API_PARAMS
+func validate_source(booru SOURCE) bool {
+	url := booru.URL
+	if booru.API_PARAMS != "" {
+		url += booru.API_QS
 	}
 
 	fmt.Println(url)
@@ -59,27 +59,28 @@ func validate_source(source SOURCE) bool {
 	return true
 }
 
+func api_qs_form(booru *SOURCE) {
+	if booru.API_PARAMS != "" {
+		login := booru.LOGIN
+		api_key := booru.API_KEY
+
+		if login == "" || api_key == "" {
+			booru.API_QS = ""
+		} else {
+			booru.API_QS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
+		}
+	}
+}
+
 func Source_process(conf Config) {
 	Dirs = conf.Dirs
 	Sources = conf.Boards
-
-	err := godotenv.Load(".env")
-	Err_check(err)
 
 	for i := range Sources {
 		booru := &Sources[i]
 
 		booru.TAG_REGEX = regexp.MustCompile(`"` + booru.TAG_KEY + `":"([^"]*)?`)
-		if booru.API_PARAMS != "" {
-			login := os.Getenv(booru.NAME + "_LOGIN")
-			api_key := os.Getenv(booru.NAME + "_API_KEY")
-
-			if login == "" || api_key == "" {
-				booru.API_PARAMS = ""
-			} else {
-				booru.API_PARAMS = fmt.Sprintf(booru.API_PARAMS, login, api_key)
-			}
-		}
+		api_qs_form(booru)
 	}
 }
 
@@ -112,6 +113,7 @@ func Edit_conf(mode MessageType, data any) {
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
 		}
+		api_qs_form(&new_source)
 
 		result := validate_source(new_source)
 		if result {
@@ -131,6 +133,7 @@ func Edit_conf(mode MessageType, data any) {
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
 		}
+		api_qs_form(&new_source)
 
 		result := validate_source(new_source)
 		if result {
