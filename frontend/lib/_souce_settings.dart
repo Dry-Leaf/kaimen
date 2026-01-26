@@ -24,21 +24,6 @@ class _SourceSettingsState extends ConsumerState<SourceSettings> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
-      next.whenData((status) {
-        final String msg;
-        if (status[0]) {
-          msg = "Changes successfully saved.";
-        } else {
-          msg = "Invalid input. Changes Discarded.";
-        }
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(content: Text(msg)),
-        );
-      });
-    });
-
     return AlertDialog(
       title: const Text('Source Settings'),
       content: Form(

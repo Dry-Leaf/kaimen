@@ -35,6 +35,21 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
       messageByTypeProvider(Message.getconf),
     );
 
+    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
+      next.whenData((status) {
+        final String msg;
+        if (status[0]) {
+          msg = "Changes successfully saved.";
+        } else {
+          msg = "Invalid input. Changes Discarded.";
+        }
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(content: Text(msg)),
+        );
+      });
+    });
+
     return config.when(
       loading: () => const CircularProgressIndicator(),
       error: (err, stack) => Text('Error: $err'),
@@ -50,55 +65,52 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
             Card(
               key: Key('$index'),
               color: itemColor,
-              child: SizedBox(
-                height: 60,
-                width: 300,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        '${boards[index]["NAME"]}',
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 30.0),
+                child: SizedBox(
+                  height: 60,
+                  width: 350,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          '${boards[index]["NAME"]}',
+                        ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit),
-                          onPressed: () {
-                            Map<String, dynamic> board = Map.of(boards[index]);
-                            board['ORIGINAL_NAME'] = board['NAME'];
-                            showDialog<void>(
-                              context: context,
-                              builder: (BuildContext context) => SourceSettings(
-                                board: board,
-                                mode: Message.editsource,
-                                conn: conn,
-                              ),
-                            );
-                          },
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete),
-                          onPressed: () {
-                            Map<String, dynamic> board = Map.of(boards[index]);
-                            board['ORIGINAL_NAME'] = board['NAME'];
-                            showDialog<void>(
-                              context: context,
-                              builder: (BuildContext context) => SourceSettings(
-                                board: board,
-                                mode: Message.editsource,
-                                conn: conn,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              Map<String, dynamic> board = Map.of(
+                                boards[index],
+                              );
+                              board['INDEX'] = index;
+                              showDialog<void>(
+                                context: context,
+                                builder: (BuildContext context) =>
+                                    SourceSettings(
+                                      board: board,
+                                      mode: Message.editsource,
+                                      conn: conn,
+                                    ),
+                              );
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete),
+                            onPressed: () {
+                              conn.send(Message.deletesource, index);
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -118,7 +130,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
               final double scale = lerpDouble(1, 1.02, animValue)!;
               return Transform.scale(
                 scale: scale,
-                child: SizedBox(width: 300, child: child),
+                child: SizedBox(width: 350, child: child),
               );
             },
             child: child,
@@ -128,7 +140,7 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
         return Scaffold(
           body: Center(
             child: SizedBox(
-              width: 300,
+              width: 350,
               child: ReorderableListView(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 40),
