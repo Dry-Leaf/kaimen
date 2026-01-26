@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,6 +22,8 @@ class _TextInput extends ConsumerState<TextInput> {
   final _link = LayerLink();
   late final ValueNotifier<List<Suggestion>> _suggestions;
   late final Conn conn;
+  final _prior = Queue<String>();
+  int _priorIndex = 0;
   String _priorText = "";
 
   final FocusNode _textFieldFocusNode = FocusNode();
@@ -72,6 +76,10 @@ class _TextInput extends ConsumerState<TextInput> {
 
   void _sendQuery() {
     conn.send(Message.userquery, _textController.text);
+    _prior.addFirst(_textController.text);
+    if (_prior.length > 5) {
+      _prior.removeLast();
+    }
     _textController.text = "";
     _updateVisibilityChange();
   }
@@ -103,6 +111,17 @@ class _TextInput extends ConsumerState<TextInput> {
         } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
             _suggestions.value.isNotEmpty) {
           _suggestionsFocusNode.requestFocus();
+          return KeyEventResult.handled;
+        } else if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+            _prior.isNotEmpty) {
+          _textController.text = _prior.elementAt(_priorIndex);
+          _priorIndex += 1;
+          if (_priorIndex > _prior.length - 1) {
+            _priorIndex = 0;
+          }
+          _textController.selection = TextSelection.collapsed(
+            offset: _textController.text.length,
+          );
           return KeyEventResult.handled;
         } else if (_textFieldFocusNode.hasFocus &&
             event.logicalKey == LogicalKeyboardKey.enter) {
@@ -166,6 +185,11 @@ class _TextInput extends ConsumerState<TextInput> {
       child: CompositedTransformTarget(
         link: _link,
         child: Focus(
+          onFocusChange: (hasFocus) {
+            if (hasFocus) {
+              _priorIndex = 0;
+            }
+          },
           onKeyEvent: _handleKeyEvent,
           child: TextField(
             focusNode: _textFieldFocusNode,

@@ -17,6 +17,7 @@ enum Message {
   qcomplete,
   createsource,
   editsource,
+  deletesource,
   reordersources,
   newdirectory,
   deletedirectory,

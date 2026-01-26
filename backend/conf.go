@@ -109,6 +109,7 @@ func Edit_conf(mode MessageType, data any) {
 
 		update_front = true
 		cast_data := data.(map[string]interface{})
+
 		new_source := SOURCE{NAME: cast_data["NAME"].(string), URL: cast_data["URL"].(string),
 			API_PARAMS: cast_data["API_PARAMS"].(string), TAG_KEY: cast_data["TAG_KEY"].(string),
 			LOGIN: cast_data["LOGIN"].(string), API_KEY: cast_data["API_KEY"].(string),
@@ -138,16 +139,19 @@ func Edit_conf(mode MessageType, data any) {
 		result := validate_source(new_source)
 		if result {
 			ustatus = true
-			for i, b := range conf.Boards {
-				if b.NAME == cast_data["ORIGINAL_NAME"] {
-					conf.Boards[i] = new_source
-					break
-				}
-			}
+			conf.Boards[int(cast_data["INDEX"].(float64))] = new_source
 		} else {
 			ustatus = false
 			return
 		}
+	case deletesource:
+		defer update(updatestatus)
+		ustatus = true
+		update_front = true
+
+		index := int(data.(float64))
+		conf.Boards = append(conf.Boards[:index], conf.Boards[index+1:]...)
+
 	case reordersources:
 		cast_data := data.([]interface{})
 		for x, n := range cast_data {
