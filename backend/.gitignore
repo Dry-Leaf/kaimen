@@ -1,6 +1,6 @@
-test_images*/*
-test/
+test*
 *.exe
 *.env
 tasks.txt
 tasks.md
+z

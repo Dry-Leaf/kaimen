@@ -101,6 +101,7 @@ that have something to do with shirts.""";
 }
 
 class _SearchPageState extends ConsumerState<SearchPage> {
+  late final Conn conn;
   String _counter = "0";
 
   @override
@@ -121,6 +122,21 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       appBar: AppBar(
         title: const Text('Kaimen'),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'Open Search Results',
+            icon: const Icon(Icons.folder),
+            onPressed: () {
+              final connAsync = ref.read(connProvider);
+
+              connAsync.whenData((c) {
+                c.send(Message.openresults, '');
+              });
+
+              if (connAsync.isLoading) {
+                debugPrint("Connection is still initializing...");
+              }
+            },
+          ),
           IconButton(
             tooltip: 'Search Syntax',
             icon: const Icon(Icons.question_mark),

@@ -39,6 +39,7 @@ const (
 	deletedirectory
 	editdirectory
 	getconf
+	openresults
 )
 
 var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
@@ -109,6 +110,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			if activeConn == c {
 				activeConn = nil
 			}
+			front_open.CompareAndSwap(true, false)
 			connMu.Unlock()
 			break
 		}
@@ -154,6 +156,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			wsjson.Write(ctx, c, resp)
 		case createsource, editsource, deletesource, reordersources, editignore, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)
+		case openresults:
+			Open_search_result()
 		default:
 			fmt.Println(req.Value)
 		}
