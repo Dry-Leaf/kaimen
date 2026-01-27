@@ -30,6 +30,12 @@ class _TextInput extends ConsumerState<TextInput> {
   final FocusNode _suggestionsFocusNode = FocusNode();
 
   @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
   void initState() {
     super.initState();
     _suggestions = ValueNotifier<List<Suggestion>>([]);

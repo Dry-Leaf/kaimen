@@ -1,3 +1,11 @@
+# Installation
+
+### Windows
+
+- Install [WinFSP](https://winfsp.dev/rel/)
+- Restart your machine
+- Download the latest [release](/releases)
+
 # Advantages over Hydrus Network
 - Minimal setup
 - Familiar UI
