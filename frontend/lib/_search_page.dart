@@ -82,6 +82,17 @@ class _IndexingBoxState extends ConsumerState<IndexingBox> {
 
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, required this.title});
+  final String documentation = """blonde_hair blue_eyes
+Search for posts that have both blonde hair and blue eyes.
+
+-blonde_hair -blue_eyes
+Search for posts that don't have blonde hair or blue eyes.
+
+%_shirt
+Wildcard pattern search.
+This example will match tag names with any or no text,
+followed by _shirt, effectively returning many tags
+that have something to do with shirts.""";
 
   final String title;
 
@@ -110,6 +121,24 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       appBar: AppBar(
         title: const Text('Kaimen'),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'Search Syntax',
+            icon: const Icon(Icons.question_mark),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) =>
+                    AlertDialog(content: Text(widget.documentation)),
+              );
+            },
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.pushNamed(context, '/settings');
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
@@ -172,13 +201,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.pushNamed(context, '/settings');
-        },
-        tooltip: 'Settings',
-        child: const Icon(Icons.settings),
       ),
     );
   }
