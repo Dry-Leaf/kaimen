@@ -1,9 +1,21 @@
 # Kaimen Configuration
 
+IGNORE_ENABLED = true
+
 # Comma seperated directories to index
 DIRS = [ ]
 
 # Add account credentials if need be (ToDo: document this)
+[[boards]]
+
+    NAME = 'Danbooru'
+
+    URL = 'https://danbooru.donmai.us/posts.json?limit=1&tags=md5%3A'
+
+    API_PARAMS = '&login=%s&api_key=%s'
+
+    TAG_KEY = 'tag_string'
+
 [[boards]]
 
     NAME = 'Gelbooru'
@@ -16,14 +28,13 @@ DIRS = [ ]
 
 [[boards]]
 
-    NAME = 'Danbooru'
+    NAME = 'Sakugabooru'
 
-    URL = 'https://danbooru.donmai.us/posts.json?limit=1&tags=md5%3A'
+    URL = 'https://www.sakugabooru.com/post.json?limit=1&name='
 
     API_PARAMS = '&login=%s&api_key=%s'
 
-    TAG_KEY = 'tag_string'
-
+    TAG_KEY = 'tags'
 
 [[boards]]
 

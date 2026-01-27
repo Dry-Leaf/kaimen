@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '_backend_conn.dart' show Message, messageByTypeProvider;
+import '_backend_conn.dart'
+    show Conn, Message, connProvider, messageByTypeProvider;
 
 class MiscTab extends ConsumerStatefulWidget {
   const MiscTab({super.key});
@@ -11,7 +12,20 @@ class MiscTab extends ConsumerStatefulWidget {
 }
 
 class _MiscTabState extends ConsumerState<MiscTab> {
+  late final Conn conn;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+
+    conn = ref
+        .read(connProvider)
+        .maybeWhen(
+          data: (conn) => conn,
+          orElse: () => throw Exception('Connection not ready'),
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,40 +37,29 @@ class _MiscTabState extends ConsumerState<MiscTab> {
       loading: () => const CircularProgressIndicator(),
       error: (err, stack) => Text('Error: $err'),
       data: (config) {
-        var wsp = config['WEB_SOCKET_PORT'];
+        bool ignoreCheck = config['Ignore_enabled'];
 
         return Scaffold(
           body: Center(
             child: SizedBox(
-              width: 200,
+              width: 220,
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    TextFormField(
-                      initialValue: wsp,
-                      decoration: const InputDecoration(
-                        labelText: 'Web Socket Port',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (String? value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter some text';
-                        }
-                        return null;
+                    CheckboxListTile(
+                      value: ignoreCheck,
+                      onChanged: (bool? value) {
+                        conn.send(Message.editignore, !ignoreCheck);
                       },
+                      title: const Text("Ignore Unfound"),
                     ),
                   ],
                 ),
               ),
             ),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {},
-            tooltip: 'Save',
-            child: const Icon(Icons.save),
           ),
         );
       },
