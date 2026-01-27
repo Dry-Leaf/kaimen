@@ -30,12 +30,11 @@
 
 ### Windows compilation
 
-```
+```powershell
 $env:CGO_CFLAGS = "\`"-IC:\Program Files (x86)\WinFsp\inc\fuse\`""
-> adjust according to installation location of WinFSP
+# adjust according to installation location of WinFSP
 
 cd backend
-
 go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
 
 cd ../frontend
