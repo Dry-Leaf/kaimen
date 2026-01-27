@@ -1,24 +1,16 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+
+	"fyne.io/systray"
 )
 
 func Err_check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func init() {
-	home, err := os.UserHomeDir()
-	Err_check(err)
-	db_path = filepath.Join(home, ".booru.db")
-
-	db_uri = fmt.Sprintf(`file:///%s?_foreign_keys=on&cache=private&_synchronous=NORMAL&_journal_mode=WAL`, filepath.ToSlash(db_path))
 }
 
 func main() {
@@ -33,6 +25,7 @@ func main() {
 
 	go dequeue()
 	go server()
+	go systray.Run(onReady, onExit)
 
 	mount()
 }

@@ -44,6 +44,15 @@ var index_count atomic.Uint64
 var tagdef_count atomic.Uint64
 
 func crawl(dir string) {
+	_, err := os.Open(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return
+		} else {
+			Err_check(err)
+		}
+	}
+
 	indexMu.Lock()
 	indexing[dir] = true
 	indexMu.Unlock()

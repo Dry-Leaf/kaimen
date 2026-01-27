@@ -4,7 +4,7 @@
 
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
-  - Download the latest [release](./releases/latest)
+- Download the latest [release](./releases/latest)
 
 # Advantages over Hydrus Network
 - Minimal setup
@@ -30,5 +30,14 @@
 
 ### Windows compilation
 
+```
 $env:CGO_CFLAGS = "\`"-IC:\Program Files (x86)\WinFsp\inc\fuse\`""
 > adjust according to installation location of WinFSP
+
+cd backend
+
+go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
+
+cd ../frontend
+flutter build windows --release
+```
