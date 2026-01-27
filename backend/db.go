@@ -388,33 +388,12 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 }
 
 func new_db() {
-	file, err := os.Create(db_path)
-	Err_check(err)
-
-	file.Close()
-
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
-
-	tx, err := conn.Begin()
-	defer tx.Rollback()
-
-	for _, stmt := range []string{file_table, tag_table, file_tag_table, ignored_table,
-		file_index, file_tag_index, file_tag_rindex, tag_index} {
-		statement, err := tx.Prepare(stmt)
-		Err_check(err)
-		statement.Exec()
-	}
-
-	r, err := embedFS.ReadFile("most_common_tags.sql.gz")
+	r, err := embedFS.ReadFile("booru.db.gz")
 	Err_check(err)
 	r2, err := gzip.NewReader(bytes.NewReader(r))
 	defer r2.Close()
-	most_common_tags, err := io.ReadAll(r2)
+	empty_db, err := io.ReadAll(r2)
 
-	_, err = tx.Exec(string(most_common_tags))
+	err = os.WriteFile(db_path, empty_db, 0644)
 	Err_check(err)
-
-	tx.Commit()
 }

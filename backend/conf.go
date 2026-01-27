@@ -32,7 +32,8 @@ type SOURCE struct {
 }
 
 //go:embed config.toml
-//go:embed most_common_tags.sql.gz
+//go:embed booru.db.gz
+//go:embed kaimen.ico
 var embedFS embed.FS
 
 var (

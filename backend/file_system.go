@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -120,16 +119,10 @@ func (self *KAIMEN_FS) Readdir(path string,
 	if path != "/results" {
 		namp = &search_nam
 	} else {
-		for {
-			if pending_remove.IsEmpty() {
-				if initial_query {
-					nams = append([]string{".", ".."}, query_recent()...)
-				}
-				namp = &nams
-				break
-			}
-			time.Sleep(time.Second)
+		if initial_query {
+			nams = append([]string{".", ".."}, query_recent()...)
 		}
+		namp = &nams
 	}
 
 	// cnams = append([]string{".", ".."}, cnams...)
