@@ -14,11 +14,11 @@ func Err_check(err error) {
 }
 
 func main() {
-	Read_conf()
-
 	if _, err := os.Stat(db_path); err != nil {
 		new_db()
 	}
+
+	Read_conf()
 
 	indexing = make(map[string]bool)
 	initial_crawl()
