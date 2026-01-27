@@ -39,7 +39,15 @@ const (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name)
 	);`
+	ignored_table = `CREATE TABLE IF NOT EXISTS ignored (
+		md5 TEXT PRIMARY KEY
+	);`
+
 	new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?);`
+
+	ignore = `INSERT INTO ignored(md5) VALUES(?)
+		ON CONFLICT(md5)
+		DO NOTHING;`
 
 	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
 		ON CONFLICT(name)
@@ -55,6 +63,8 @@ const (
 
 	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?);`
 
+	ignore_exists = `SELECT COUNT(md5) FROM ignored WHERE md5 = ?;`
+
 	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
 
 	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?;`
@@ -62,6 +72,8 @@ const (
 	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?;`
 
 	query_recent_images = `SELECT * FROM files LIMIT 50;`
+
+	ignore_deletion = `DELETE FROM ignored WHERE md5 = ?;`
 
 	deletion = `DELETE FROM files WHERE file_path = ?;`
 
@@ -101,6 +113,23 @@ const (
 	// LEFT JOIN file_tags fe2 ON fe2.md5 = f.md5 AND fe2.tag = 'exclude_tag2'
 	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
 )
+
+func ignore_check(md5sum string) int {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	var result int
+
+	ignore_check_stmt, err := tx.Prepare(ignore_exists)
+	Err_check(err)
+	ignore_check_stmt.QueryRow(md5sum).Scan(&result)
+
+	return result
+}
 
 func dup_check(md5sum, path string) int {
 	conn, err := sql.Open("sqlite3", db_uri)
@@ -191,11 +220,7 @@ func query(q_string string) []string {
 
 	tags := strings.Split(q_string, " ")
 
-	fmt.Print(tags)
-	fmt.Print(len(tags))
-
 	fquery := query_head
-
 	var exlude_where []string
 
 	for i, tag := range tags {
@@ -247,8 +272,6 @@ func query(q_string string) []string {
 		nams = append(nams, cmirror.md5+cmirror.extension)
 	}
 
-	fmt.Println(nams)
-
 	return nams
 }
 
@@ -277,7 +300,22 @@ func query_recent() []string {
 	return nams
 }
 
-func insert_metadata(md5sum, path, ext string, tags []string) {
+func insert_ignore(md5sum string) {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	ignore_stmt, err := tx.Prepare(ignore)
+	Err_check(err)
+	ignore_stmt.Exec(md5sum)
+
+	tx.Commit()
+}
+
+func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool) {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -339,6 +377,12 @@ func insert_metadata(md5sum, path, ext string, tags []string) {
 		insert_counter = 0
 	}
 
+	if ignore_result {
+		ignore_deletion_stmt, err := tx.Prepare(ignore_deletion)
+		Err_check(err)
+		ignore_deletion_stmt.Exec(md5sum)
+	}
+
 	tx.Commit()
 	update(counter)
 }
@@ -356,7 +400,7 @@ func new_db() {
 	tx, err := conn.Begin()
 	defer tx.Rollback()
 
-	for _, stmt := range []string{file_table, tag_table, file_tag_table,
+	for _, stmt := range []string{file_table, tag_table, file_tag_table, ignored_table,
 		file_index, file_tag_index, file_tag_rindex, tag_index} {
 		statement, err := tx.Prepare(stmt)
 		Err_check(err)

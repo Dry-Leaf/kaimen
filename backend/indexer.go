@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
@@ -38,6 +39,9 @@ func initial_crawl() {
 	}
 	confMu.Unlock()
 }
+
+var index_count atomic.Uint64
+var tagdef_count atomic.Uint64
 
 func crawl(dir string) {
 	indexMu.Lock()
@@ -121,6 +125,14 @@ func process(path, ext string) {
 
 	writeMu.Lock()
 	defer writeMu.Unlock()
+	// check db if file is ignored
+	ignore_result := ignore_check(md5sum) > 0
+	if Ignore_enabled {
+		if ignore_result {
+			fmt.Println("ignoring: " + md5sum)
+			return
+		}
+	}
 	// check db if file already there
 	result := dup_check(md5sum, path)
 	if result > 0 {
@@ -129,12 +141,20 @@ func process(path, ext string) {
 
 	fmt.Printf("process: %s, md5: %s \n", path, md5sum)
 
-	time.Sleep(7 * time.Second)
+	if index_count.Load() > 9 {
+		index_count.Store(0)
+		time.Sleep(120 * time.Second)
+	} else {
+		index_count.Add(1)
+		time.Sleep(7 * time.Second)
+	}
 
 	tags := get_tags(md5sum)
 	if tags != nil {
 		fmt.Printf("tags got for %s \n", path)
-		insert_metadata(md5sum, path, ext, tags)
+		insert_metadata(md5sum, path, ext, tags, ignore_result)
+	} else {
+		insert_ignore(md5sum)
 	}
 
 	fmt.Printf("%s finished \n", path)
@@ -145,7 +165,14 @@ type cat struct {
 }
 
 func get_tag_cat(tag string) int {
-	time.Sleep(5 * time.Second)
+	if tagdef_count.Load() > 9 {
+		tagdef_count.Store(0)
+		time.Sleep(120 * time.Second)
+	} else {
+		tagdef_count.Add(1)
+		time.Sleep(7 * time.Second)
+	}
+
 	url := `https://danbooru.donmai.us/tags.json?search[name_matches]=` + tag
 
 	resp, err := http.Get(url)
