@@ -4,7 +4,7 @@
 
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
-- Download the latest [release](/releases/latest)
+- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/latest)
 
 # Advantages over Hydrus Network
 - Minimal setup
