@@ -41,4 +41,6 @@ go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
 cd ../frontend
 
 flutter build windows --release
+
+mv ../backend/kaimen.exe build/windows/x64/runner/Release
 ```
