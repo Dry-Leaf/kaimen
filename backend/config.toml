@@ -30,7 +30,7 @@ DIRS = [ ]
 
     NAME = 'Sakugabooru'
 
-    URL = 'https://www.sakugabooru.com/post.json?limit=1&name='
+    URL = 'https://www.sakugabooru.com/post.json?limit=1&tags=md5%3A'
 
     API_PARAMS = '&login=%s&api_key=%s'
 
