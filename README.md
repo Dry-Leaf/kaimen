@@ -9,7 +9,7 @@
 ### Setup
 Gelbooru requires api credentials to be provided to pull metadata from it. Your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
 
-![Gelbooru Setup](https://github.com/user-attachments/assets/355475f0-dd7f-453e-8520-c34c78fcccfc)
+![Gelbooru Setup](https://github.com/user-attachments/assets/60744096-5e80-4714-a7b6-6a261d3e2d61)
 
 # Advantages over Hydrus Network
 - Minimal setup
