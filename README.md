@@ -6,6 +6,11 @@
 - Restart your machine
 - Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/latest)
 
+### Setup
+Gelbooru requires api credentials to be provided to pull metadata from it. Your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
+
+![Gelbooru Setup](https://github.com/user-attachments/assets/355475f0-dd7f-453e-8520-c34c78fcccfc)
+
 # Advantages over Hydrus Network
 - Minimal setup
 - Familiar UI
