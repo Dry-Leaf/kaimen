@@ -1,3 +1,6 @@
+# Demo
+![kaimen_demo](https://github.com/user-attachments/assets/355475f0-dd7f-453e-8520-c34c78fcccfc)
+
 # Installation
 
 ### Windows
@@ -16,9 +19,6 @@ Gelbooru requires api credentials to be provided to pull metadata from it. Your 
 - Familiar UI
 - Works with file managers
 - Does not require its own copy of files
-
-# Demo
-![kaimen_demo](https://github.com/user-attachments/assets/355475f0-dd7f-453e-8520-c34c78fcccfc)
 
 # Building
 
