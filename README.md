@@ -10,7 +10,7 @@
 - Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/latest)
 
 ### Setup
-Gelbooru requires api credentials to be provided to pull metadata from it. Your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
+Gelbooru requires api credentials to be provided to pull metadata from it. After making an account and logging in, your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
 
 ![Gelbooru Setup](https://github.com/user-attachments/assets/60744096-5e80-4714-a7b6-6a261d3e2d61)
 
