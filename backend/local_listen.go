@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -51,7 +50,7 @@ func dequeue() {
 			info, err := os.Stat(path)
 			if err != nil {
 				pending_create.Delete(path)
-				fmt.Println("deleted", path)
+				//fmt.Println("deleted", path)
 				return true
 			}
 
@@ -59,7 +58,7 @@ func dequeue() {
 			Err_check(err)
 
 			if now.Sub(info.ModTime()) >= interval {
-				fmt.Println("About to process", path)
+				//fmt.Println("About to process", path)
 				go func(p string) {
 					process(p, mtype.Extension())
 					pending_create.Delete(p)
@@ -71,8 +70,8 @@ func dequeue() {
 		if pending_create.IsEmpty() {
 			pending_remove.Range(func(key, _ any) bool {
 				path := key.(string)
-				fmt.Println("from remove queue")
-				fmt.Println(path)
+				//fmt.Println("from remove queue")
+				//fmt.Println(path)
 				writeMu.Lock()
 				_, err := os.Stat(path)
 				if err != nil {
@@ -102,7 +101,7 @@ func dir_watch(dir string) {
 		ei := <-c
 
 		if _, loaded := watch_kill.LoadAndDelete(dir); loaded {
-			fmt.Printf("%s deleted\n", dir)
+			//fmt.Printf("%s deleted\n", dir)
 			break
 		}
 

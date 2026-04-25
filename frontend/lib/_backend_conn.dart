@@ -25,6 +25,7 @@ enum Message {
   editdirectory,
   getconf,
   openresults,
+  kill,
 }
 
 final messageByTypeProvider = StreamProvider.family<dynamic, Message>((

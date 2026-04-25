@@ -150,7 +150,7 @@ func dup_check(md5sum, path string) int {
 		update_path_stmt, err := tx.Prepare(update_path)
 		Err_check(err)
 		update_path_stmt.Exec(path, md5sum)
-		fmt.Print("MOVED " + rpath + "TO " + path)
+		//fmt.Print("MOVED " + rpath + "TO " + path)
 	}
 
 	tx.Commit()
@@ -251,7 +251,7 @@ func query(q_string string) []string {
 		}
 	}
 
-	fmt.Print(fquery)
+	//fmt.Print(fquery)
 
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
@@ -333,7 +333,7 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 	new_tag_stmt, err := tx.Prepare(new_tag)
 	Err_check(err)
 
-	fmt.Printf("%s tag cats \n", path)
+	//fmt.Printf("%s tag cats \n", path)
 
 	for _, tag := range tags {
 		row := new_tag_stmt.QueryRow(tag)
@@ -345,7 +345,7 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 
 		if freq == 1 {
 			if category == 0 {
-				fmt.Printf("new tag %s\n", tag)
+				//fmt.Printf("new tag %s\n", tag)
 				cat := get_tag_cat(tag)
 				if cat != 0 {
 					update_tag_stmt, err := tx.Prepare(update_tag_cat)
@@ -354,18 +354,18 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 				}
 			}
 			if category == -1 {
-				fmt.Printf("existing tag %s\n", tag)
+				//fmt.Printf("existing tag %s\n", tag)
 				update_tag_stmt, err := tx.Prepare(update_tag_cat)
 				Err_check(err)
 				update_tag_stmt.Exec(0, tag)
 			}
 		} else {
-			fmt.Printf("existing tag %s\n", tag)
+			//fmt.Printf("existing tag %s\n", tag)
 		}
 		new_relation_stmt.Exec(md5sum, tag)
 	}
 
-	fmt.Printf("%s tag cats finished \n", path)
+	//fmt.Printf("%s tag cats finished \n", path)
 
 	insert_counter += 1
 

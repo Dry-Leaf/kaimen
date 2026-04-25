@@ -54,7 +54,7 @@ func validate_source(booru SOURCE) bool {
 		url += booru.API_QS
 	}
 
-	fmt.Println(url)
+	//fmt.Println(url)
 	_, err := http.Get(url)
 	if err != nil {
 		return false
@@ -168,7 +168,7 @@ func Edit_conf(mode MessageType, data any) {
 				}
 			}
 		}
-		fmt.Println(conf.Boards)
+		//fmt.Println(conf.Boards)
 	case editignore:
 		update_front = true
 		Ignore_enabled = data.(bool)
@@ -239,7 +239,7 @@ func Read_conf() {
 	Dirs = conf.Dirs
 
 	confMu.Unlock()
-	for _, booru := range Sources {
-		fmt.Println(booru)
-	}
+	// for _, booru := range Sources {
+	// 	fmt.Println(booru)
+	// }
 }

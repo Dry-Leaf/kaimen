@@ -138,7 +138,7 @@ func process(path, ext string) {
 	ignore_result := ignore_check(md5sum) > 0
 	if Ignore_enabled {
 		if ignore_result {
-			fmt.Println("ignoring: " + md5sum)
+			//fmt.Println("ignoring: " + md5sum)
 			return
 		}
 	}
@@ -148,7 +148,7 @@ func process(path, ext string) {
 		return
 	}
 
-	fmt.Printf("process: %s, md5: %s \n", path, md5sum)
+	//fmt.Printf("process: %s, md5: %s \n", path, md5sum)
 
 	if index_count.Load() > 9 {
 		index_count.Store(0)
@@ -160,13 +160,13 @@ func process(path, ext string) {
 
 	tags := get_tags(md5sum)
 	if tags != nil {
-		fmt.Printf("tags got for %s \n", path)
+		//fmt.Printf("tags got for %s \n", path)
 		insert_metadata(md5sum, path, ext, tags, ignore_result)
 	} else {
 		insert_ignore(md5sum)
 	}
 
-	fmt.Printf("%s finished \n", path)
+	//fmt.Printf("%s finished \n", path)
 }
 
 type cat struct {
@@ -230,7 +230,7 @@ func get_tags(md5sum string) []string {
 			url += booru.API_QS
 		}
 
-		fmt.Println(url)
+		//fmt.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
 			continue
