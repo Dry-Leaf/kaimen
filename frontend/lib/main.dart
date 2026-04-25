@@ -1,13 +1,77 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide MenuItem;
+import 'dart:io';
+
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '_backend_conn.dart' show Message, connProvider;
 
 import '_search_page.dart' show SearchPage;
 import '_settings_page.dart' show SettingsPage;
 
+import 'package:tray_manager/tray_manager.dart';
+
+Future<void> setupTray(ProviderContainer container) async {
+  final iconPath = Platform.isWindows ? 'kaimen.ico' : 'kaimen.png';
+
+  await trayManager.setIcon(iconPath);
+  await trayManager.setToolTip('Kaimen');
+
+  Menu menu = Menu(
+    items: [
+      MenuItem(key: 'show_results', label: 'Open Search Results'),
+      MenuItem.separator(),
+      MenuItem(key: 'exit_app', label: 'Exit App'),
+    ],
+  );
+  await trayManager.setContextMenu(menu);
+  trayManager.addListener(MyTrayListener(container));
+}
+
+class MyTrayListener extends TrayListener {
+  final ProviderContainer container;
+
+  MyTrayListener(this.container);
+
+  @override
+  void onTrayIconMouseDown() {
+    windowManager.show();
+  }
+
+  @override
+  void onTrayIconRightMouseDown() {
+    // 1. Force the app to take focus from the taskbar/shell
+    windowManager.focus().then((_) {
+      // 2. Now show the menu
+      trayManager.popUpContextMenu();
+    });
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) {
+    if (menuItem.key == 'show_results') {
+      final connAsync = container.read(connProvider);
+
+      connAsync.whenData((c) {
+        c.send(Message.openresults, '');
+      });
+    } else if (menuItem.key == 'exit_app') {
+      final connAsync = container.read(connProvider);
+
+      connAsync.whenData((c) {
+        c.send(Message.kill, '');
+      });
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+
+  final container = ProviderContainer();
+  container.listen(connProvider, (_, __) {});
+
+  await setupTray(container);
 
   WindowOptions windowOptions = WindowOptions(
     size: Size(800, 600),
@@ -29,20 +93,9 @@ class UI extends StatefulWidget {
 }
 
 class _UIState extends State<UI> {
-  bool _windowShown = false;
-
   @override
   void initState() {
     super.initState();
-
-    // This callback runs after the first frame is rendered
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!_windowShown) {
-        _windowShown = true;
-        await windowManager.show();
-        await windowManager.focus();
-      }
-    });
   }
 
   @override

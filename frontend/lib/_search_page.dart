@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show exit;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
@@ -158,7 +158,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
           IconButton(
             icon: const Icon(Icons.close),
             onPressed: () {
-              exit(0);
+              windowManager.hide();
             },
           ),
         ],

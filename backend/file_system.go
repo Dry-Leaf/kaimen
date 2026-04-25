@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -75,8 +74,8 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		info, err = os.Stat(real_path)
 		if err != nil {
 			if os.IsNotExist(err) {
-				fmt.Println("PATH DOES NOT EXIST:")
-				fmt.Println(real_path)
+				//fmt.Println("PATH DOES NOT EXIST:")
+				//fmt.Println(real_path)
 				delete_file(real_path)
 				return -int(fuse.ENOENT)
 			}

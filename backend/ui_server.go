@@ -19,6 +19,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/pkg/browser"
 )
 
 type MessageType int64
@@ -40,6 +41,7 @@ const (
 	editdirectory
 	getconf
 	openresults
+	kill
 )
 
 var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
@@ -53,6 +55,11 @@ var (
 	activeConn *websocket.Conn
 	connMu     sync.Mutex
 )
+
+func Open_search_result() {
+	err := browser.OpenFile("search/results")
+	Err_check(err)
+}
 
 func update(mode MessageType) {
 	connMu.Lock()
@@ -71,7 +78,7 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
-		fmt.Println("sending counter")
+		//fmt.Println("sending counter")
 		file_count := strconv.Itoa(get_count())
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
@@ -121,11 +128,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		switch req.Type {
 		case counter:
 			file_count := strconv.Itoa(get_count())
-			fmt.Println(file_count)
+			//fmt.Println(file_count)
 			indexMu.Lock()
 			keys := slices.Sorted(maps.Keys(indexing))
 			indexMu.Unlock()
-			fmt.Println(keys)
+			//fmt.Println(keys)
 			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0}}
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
@@ -158,6 +165,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			Edit_conf(req.Type, req.Value)
 		case openresults:
 			Open_search_result()
+		case kill:
+			onExit()
 		default:
 			fmt.Println(req.Value)
 		}
