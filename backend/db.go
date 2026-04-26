@@ -29,8 +29,15 @@ const (
 		md5 TEXT PRIMARY KEY,
 		extension TEXT NOT NULL,
 		file_path TEXT NOT NULL,
-		ignore INTEGER,
+		ignore INTEGER NOT NULL,
 	);`
+	// width, height, size of file, length time(duration of track 1), mod time, EXIF(XMP Toolkit) tag Create Date
+	metadata_table = `CREATE TABLE IF NOT EXISTS metadata (
+		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
+		property TEXT NOT NULL,
+		numeric_value REAL,
+		text_value TEXT,
+	)`
 	tag_table = `CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
 		freq INT NOT NULL,
@@ -81,7 +88,7 @@ const (
 
 	tag_index = `CREATE INDEX idx_tags_name_freq ON tags(name ASC, freq DESC);`
 
-	file_count = `SELECT COUNT(*) FROM files;`
+	file_count = `SELECT COUNT(*) FROM files WHERE ignore = FALSE;`
 
 	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT 10;`
 
