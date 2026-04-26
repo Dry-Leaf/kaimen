@@ -135,9 +135,9 @@ func process(path, ext string) {
 	writeMu.Lock()
 	defer writeMu.Unlock()
 	// check db if file is ignored
-	ignore_result := ignore_check(md5sum) > 0
+	prev_ignored := ignore_check(md5sum) > 0
 	if Ignore_enabled {
-		if ignore_result {
+		if prev_ignored {
 			//fmt.Println("ignoring: " + md5sum)
 			return
 		}
@@ -158,13 +158,14 @@ func process(path, ext string) {
 		time.Sleep(7 * time.Second)
 	}
 
+	to_ignore := true
 	tags := get_tags(md5sum)
 	if tags != nil {
 		//fmt.Printf("tags got for %s \n", path)
-		insert_metadata(md5sum, path, ext, tags, ignore_result)
-	} else {
-		insert_ignore(md5sum)
+		to_ignore = false
 	}
+
+	insert_metadata(md5sum, path, ext, tags, to_ignore, prev_ignored)
 
 	//fmt.Printf("%s finished \n", path)
 }
