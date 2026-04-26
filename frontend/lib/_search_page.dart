@@ -92,7 +92,10 @@ Search for posts that don't have blonde hair or blue eyes.
 Wildcard pattern search.
 This example will match tag names with any or no text,
 followed by _shirt, effectively returning many tags
-that have something to do with shirts.""";
+that have something to do with shirts.
+
+ignored
+Returns images that tags were not found for.""";
 
   final String title;
 

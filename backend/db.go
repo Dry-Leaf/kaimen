@@ -28,7 +28,8 @@ const (
 	file_table = `CREATE TABLE IF NOT EXISTS files (
 		md5 TEXT PRIMARY KEY,
 		extension TEXT NOT NULL,
-		file_path TEXT NOT NULL
+		file_path TEXT NOT NULL,
+		ignore INTEGER,
 	);`
 	tag_table = `CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
@@ -39,15 +40,8 @@ const (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name)
 	);`
-	ignored_table = `CREATE TABLE IF NOT EXISTS ignored (
-		md5 TEXT PRIMARY KEY
-	);`
 
-	new_image = `INSERT INTO files(md5,extension,file_path) VALUES(?,?,?);`
-
-	ignore = `INSERT INTO ignored(md5) VALUES(?)
-		ON CONFLICT(md5)
-		DO NOTHING;`
+	new_image = `INSERT INTO files(md5,extension,file_path,ignore) VALUES(?,?,?,?);`
 
 	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
 		ON CONFLICT(name)
@@ -63,7 +57,7 @@ const (
 
 	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?);`
 
-	ignore_exists = `SELECT COUNT(md5) FROM ignored WHERE md5 = ?;`
+	ignore_exists = `SELECT COUNT(md5) FROM files WHERE md5 = ? AND ignore = TRUE;`
 
 	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
 
@@ -71,9 +65,9 @@ const (
 
 	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?;`
 
-	query_recent_images = `SELECT * FROM files LIMIT 50;`
+	query_recent_images = `SELECT md5, extension, file_path FROM files WHERE ignore = FALSE ORDER BY rowid DESC LIMIT 50;`
 
-	ignore_deletion = `DELETE FROM ignored WHERE md5 = ?;`
+	ignore_deletion = `UPDATE files SET ignore = FALSE WHERE md5 = ?;`
 
 	deletion = `DELETE FROM files WHERE file_path = ?;`
 
@@ -91,7 +85,9 @@ const (
 
 	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT 10;`
 
-	query_head = `SELECT f.* FROM files f `
+	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
+
+	ignored_query = `WHERE f.ignore = TRUE `
 
 	query_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag = "%s" `
 
@@ -221,36 +217,41 @@ func query(q_string string) []string {
 	tags := strings.Split(q_string, " ")
 
 	fquery := query_head
-	var exlude_where []string
 
-	for i, tag := range tags {
-		if len(tag) > 1 {
-			var cq string
-			if ctag, found := strings.CutPrefix(tag, "-"); found {
-				cq = fmt.Sprintf(query_exclude, i, ctag)
-				exlude_where = append(exlude_where,
-					fmt.Sprintf(query_exclude_where, i))
-			} else {
-				cquery := query_include
-				if strings.Contains(tag, "%") {
-					cquery = query_fuzzy_include
+	if len(tags) == 1 && strings.ToLower(tags[0]) == "ignored" {
+		fquery += ignored_query
+	} else {
+		var exlude_where []string
+
+		for i, tag := range tags {
+			tag = strings.ToLower(tag)
+			if len(tag) > 1 {
+				var cq string
+				if ctag, found := strings.CutPrefix(tag, "-"); found {
+					cq = fmt.Sprintf(query_exclude, i, ctag)
+					exlude_where = append(exlude_where,
+						fmt.Sprintf(query_exclude_where, i))
+				} else {
+					cquery := query_include
+					if strings.Contains(tag, "%") {
+						cquery = query_fuzzy_include
+					}
+					cq = fmt.Sprintf(cquery, i, tag)
 				}
-				cq = fmt.Sprintf(cquery, i, tag)
+				fquery += cq
 			}
-			fquery += cq
+		}
+
+		if len(exlude_where) > 0 {
+			fquery += `WHERE `
+			for i, clause := range exlude_where {
+				if i > 0 {
+					fquery += `AND `
+				}
+				fquery += clause
+			}
 		}
 	}
-
-	if len(exlude_where) > 0 {
-		fquery += `WHERE `
-		for i, clause := range exlude_where {
-			if i > 0 {
-				fquery += `AND `
-			}
-			fquery += clause
-		}
-	}
-
 	//fmt.Print(fquery)
 
 	conn, err := sql.Open("sqlite3", db_uri)
@@ -300,22 +301,7 @@ func query_recent() []string {
 	return nams
 }
 
-func insert_ignore(md5sum string) {
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
-
-	tx, err := conn.Begin()
-	defer tx.Rollback()
-
-	ignore_stmt, err := tx.Prepare(ignore)
-	Err_check(err)
-	ignore_stmt.Exec(md5sum)
-
-	tx.Commit()
-}
-
-func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool) {
+func insert_metadata(md5sum, path, ext string, tags []string, to_ignore, prev_ignored bool) {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -325,7 +311,12 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 
 	new_image_stmt, err := tx.Prepare(new_image)
 	Err_check(err)
-	new_image_stmt.Exec(md5sum, ext, path)
+	new_image_stmt.Exec(md5sum, ext, path, to_ignore)
+
+	if to_ignore {
+		tx.Commit()
+		return
+	}
 
 	new_relation_stmt, err := tx.Prepare(new_relation)
 	Err_check(err)
@@ -365,8 +356,6 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 		new_relation_stmt.Exec(md5sum, tag)
 	}
 
-	//fmt.Printf("%s tag cats finished \n", path)
-
 	insert_counter += 1
 
 	if insert_counter > 50 {
@@ -377,7 +366,7 @@ func insert_metadata(md5sum, path, ext string, tags []string, ignore_result bool
 		insert_counter = 0
 	}
 
-	if ignore_result {
+	if prev_ignored {
 		ignore_deletion_stmt, err := tx.Prepare(ignore_deletion)
 		Err_check(err)
 		ignore_deletion_stmt.Exec(md5sum)
