@@ -8,6 +8,29 @@ import '_backend_conn.dart'
 import '_search_box.dart' show SearchBox;
 import '_digit_row.dart' show DigitRow;
 
+class QueueNotif extends ConsumerStatefulWidget {
+  const QueueNotif({super.key, required this.queueSize});
+
+  final int queueSize;
+
+  @override
+  ConsumerState<QueueNotif> createState() => _QueueNotifState();
+}
+
+class _QueueNotifState extends ConsumerState<QueueNotif> {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text("${widget.queueSize.toString()} new file(s) being processed"),
+        SizedBox(width: 8),
+        SpinKitThreeBounce(color: Colors.grey, size: 10.0),
+      ],
+    );
+  }
+}
+
 class ResultCounter extends ConsumerStatefulWidget {
   const ResultCounter({super.key});
 
@@ -213,6 +236,17 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         child: Text(
                           "No directories being watched. Add one in the settings.",
                         ),
+                      ),
+                    ),
+                  ),
+                if (msg[1] == null && msg[3] != null && msg[3] != 0)
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Transform.translate(
+                      offset: const Offset(0, -16),
+                      child: SizedBox(
+                        height: 120,
+                        child: QueueNotif(queueSize: msg[3]),
                       ),
                     ),
                   ),

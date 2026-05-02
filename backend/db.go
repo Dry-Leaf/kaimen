@@ -31,7 +31,7 @@ const (
 		file_path TEXT NOT NULL,
 		ignore INTEGER NOT NULL,
 	);`
-	// width, height, size of file, length time(duration of track 1), mod time, EXIF(XMP Toolkit) tag Create Date
+	// width, height, size of file, mod time OR EXIF(XMP Toolkit) tag Create Date, length time(duration of track 1)
 	metadata_table = `CREATE TABLE IF NOT EXISTS metadata (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		property TEXT NOT NULL,
@@ -45,7 +45,8 @@ const (
 	);`
 	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
-		tag TEXT REFERENCES tags(name)
+		tag TEXT REFERENCES tags(name)  ON DELETE CASCADE,
+		inferred INTEGER
 	);`
 
 	new_image = `INSERT INTO files(md5,extension,file_path,ignore) VALUES(?,?,?,?);`
