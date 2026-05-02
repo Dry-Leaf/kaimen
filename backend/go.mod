@@ -9,6 +9,7 @@ require (
 	github.com/coder/websocket v1.8.14
 	github.com/gabriel-vasile/mimetype v1.4.10
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/opencontainers/selinux v1.13.1
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/rjeczalik/notify v0.9.3
 	github.com/winfsp/cgofuse v1.6.0

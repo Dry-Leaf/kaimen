@@ -50,6 +50,7 @@ func dequeue() {
 			info, err := os.Stat(path)
 			if err != nil {
 				pending_create.Delete(path)
+				update(counter)
 				//fmt.Println("deleted", path)
 				return true
 			}
@@ -62,6 +63,7 @@ func dequeue() {
 				go func(p string) {
 					process(p, mtype.Extension())
 					pending_create.Delete(p)
+					update(counter)
 				}(path)
 			}
 			return true
@@ -108,6 +110,7 @@ func dir_watch(dir string) {
 		switch ei.Event() {
 		case notify.Create:
 			pending_create.Store(ei.Path())
+			update(counter)
 		case notify.Remove:
 			pending_remove.Store(ei.Path())
 		}

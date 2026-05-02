@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
+	"github.com/opencontainers/selinux/pkg/pwalkdir"
 )
 
 const (
@@ -59,7 +60,7 @@ func crawl(dir string) {
 
 	update(counter)
 
-	filepath.WalkDir(dir, index)
+	pwalkdir.Walk(dir, index)
 
 	indexMu.Lock()
 	delete(indexing, dir)

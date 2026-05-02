@@ -83,7 +83,7 @@ func update(mode MessageType) {
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
-		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0}}
+		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -133,7 +133,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			keys := slices.Sorted(maps.Keys(indexing))
 			indexMu.Unlock()
 			//fmt.Println(keys)
-			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0}}
+			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case autosuggest:
