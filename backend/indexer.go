@@ -83,14 +83,18 @@ func index(path string, d fs.DirEntry, err error) error {
 		}
 
 		if slices.Contains(supported[:], mtype.String()) {
-			process(path, mtype.Extension())
+			info, err := os.Stat(path)
+			if err != nil {
+				return nil
+			}
+			process(path, mtype.Extension(), info)
 		}
 	}
 
 	return nil
 }
 
-func process(path, ext string) {
+func process(path, ext string, info os.FileInfo) {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -165,8 +169,10 @@ func process(path, ext string) {
 		//fmt.Printf("tags got for %s \n", path)
 		to_ignore = false
 	}
+	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored)
 
-	insert_metadata(md5sum, path, ext, tags, to_ignore, prev_ignored)
+	meta := get_meta(md5sum, path, ext, info)
+	insert_metadata(meta)
 
 	//fmt.Printf("%s finished \n", path)
 }

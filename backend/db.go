@@ -309,7 +309,11 @@ func query_recent() []string {
 	return nams
 }
 
-func insert_metadata(md5sum, path, ext string, tags []string, to_ignore, prev_ignored bool) {
+func insert_metadata(meta_data map[string]string) {
+
+}
+
+func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignored bool) {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
