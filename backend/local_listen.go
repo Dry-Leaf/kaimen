@@ -61,7 +61,7 @@ func dequeue() {
 			if now.Sub(info.ModTime()) >= interval {
 				//fmt.Println("About to process", path)
 				go func(p string) {
-					process(p, mtype.Extension())
+					process(p, mtype.Extension(), info)
 					pending_create.Delete(p)
 					update(counter)
 				}(path)
