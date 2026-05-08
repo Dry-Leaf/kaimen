@@ -37,7 +37,8 @@ const (
 		property TEXT NOT NULL,
 		numeric_value REAL,
 		text_value TEXT,
-	)`
+		PRIMARY KEY (md5,property)
+	);`
 	tag_table = `CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
 		freq INT NOT NULL,
@@ -48,6 +49,9 @@ const (
 		tag TEXT REFERENCES tags(name)  ON DELETE CASCADE,
 		inferred INTEGER
 	);`
+
+	new_meta = `INSERT INTO metadata(md5,property,numeric_value,text_value) VALUES(?,?,?,?)
+		ON CONFLICT(md5, property) DO NOTHING;`
 
 	new_image = `INSERT INTO files(md5,extension,file_path,ignore) VALUES(?,?,?,?);`
 
@@ -309,8 +313,34 @@ func query_recent() []string {
 	return nams
 }
 
-func insert_metadata(meta_data map[string]any) {
+func insert_metadata(md5sum string, meta_data map[string]any) {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
 
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	new_meta_stmt, err := tx.Prepare(new_meta)
+	Err_check(err)
+
+	for property, value := range meta_data {
+		var numeric bool
+		switch property {
+		case "name":
+			numeric = false
+		default:
+			numeric = true
+		}
+
+		if numeric {
+			new_meta_stmt.Exec(md5sum, property, value, nil)
+		} else {
+			new_meta_stmt.Exec(md5sum, property, nil, value)
+		}
+	}
+
+	tx.Commit()
 }
 
 func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignored bool) {
@@ -389,6 +419,7 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 }
 
 func new_db() {
+	// needs updating for next release
 	r, err := embedFS.ReadFile("booru.db.gz")
 	Err_check(err)
 	r2, err := gzip.NewReader(bytes.NewReader(r))

@@ -179,7 +179,7 @@ func process(path, ext string, info os.FileInfo) {
 	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored)
 
 	meta := get_meta(path, ext, info, complete_meta, found_meta)
-	insert_metadata(meta)
+	insert_metadata(md5sum, meta)
 
 	//fmt.Printf("%s finished \n", path)
 }
