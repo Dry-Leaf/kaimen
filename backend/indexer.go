@@ -44,6 +44,13 @@ func initial_crawl() {
 var index_count atomic.Uint64
 var tagdef_count atomic.Uint64
 
+var meta_regex [4]*regexp.Regexp = [4]*regexp.Regexp{
+	regexp.MustCompile(`"created_at":"([^"]*)?`),
+	regexp.MustCompile(`"width":([^,]*)?`),
+	regexp.MustCompile(`"height":([^,]*)?`),
+	regexp.MustCompile(`"duration":([^,]*)?`),
+}
+
 func crawl(dir string) {
 	_, err := os.Open(dir)
 	if err != nil {
@@ -164,14 +171,14 @@ func process(path, ext string, info os.FileInfo) {
 	}
 
 	to_ignore := true
-	tags := get_tags(md5sum)
+	tags, complete_meta, found_meta := get_tags(md5sum, ext)
 	if tags != nil {
 		//fmt.Printf("tags got for %s \n", path)
 		to_ignore = false
 	}
 	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored)
 
-	meta := get_meta(md5sum, path, ext, info)
+	meta := get_meta(path, ext, info, complete_meta, found_meta)
 	insert_metadata(meta)
 
 	//fmt.Printf("%s finished \n", path)
@@ -228,7 +235,7 @@ func get_tag_cat(tag string) int {
 	return 0
 }
 
-func get_tags(md5sum string) []string {
+func get_tags(md5sum, ext string) ([]string, bool, map[string]any) {
 	confMu.Lock()
 	defer confMu.Unlock()
 
@@ -247,12 +254,33 @@ func get_tags(md5sum string) []string {
 
 		body, err := io.ReadAll(resp.Body)
 		Err_check(err)
+		str_body := string(body)
 
-		tag_block := booru.TAG_REGEX.FindStringSubmatch(string(body))
+		tag_block := booru.TAG_REGEX.FindStringSubmatch(str_body)
 		if len(tag_block) > 0 {
 			tags := strings.Split(tag_block[1], " ")
-			return tags
+
+			meta_names := [4]string{"timestamp", "width", "height", "duration"}
+
+			found_meta := make(map[string]any)
+
+			complete_meta := true
+			for i, rexp := range meta_regex {
+				//duration irrelevant for non-videos
+				if i == 3 && ext != ".mp4" && ext != ".webm" {
+					continue
+				}
+				block := rexp.FindStringSubmatch(str_body)
+
+				if block != nil && block[1] != "null" {
+					found_meta[meta_names[i]] = block[1]
+				} else {
+					complete_meta = false
+				}
+			}
+
+			return tags, complete_meta, found_meta
 		}
 	}
-	return nil
+	return nil, false, nil
 }

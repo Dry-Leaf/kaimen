@@ -309,7 +309,7 @@ func query_recent() []string {
 	return nams
 }
 
-func insert_metadata(meta_data map[string]string) {
+func insert_metadata(meta_data map[string]any) {
 
 }
 

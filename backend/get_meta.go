@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"io"
 	"os"
+	"strconv"
 
 	_ "image/gif"
 	_ "image/jpeg"
@@ -16,10 +18,11 @@ import (
 	"github.com/abema/go-mp4"
 	"github.com/at-wat/ebml-go"
 	"github.com/at-wat/ebml-go/webm"
-	"github.com/rwcarlsen/goexif/exif"
+	"github.com/evanoberholster/imagemeta"
+	"github.com/evanoberholster/imagemeta/meta/xmp"
 )
 
-func get_video_ducation(reader *os.File, ext string) float64 {
+func get_video_meta(reader *os.File, ext string) float64 {
 	_, err := reader.Seek(0, io.SeekStart)
 	Err_check(err)
 
@@ -28,7 +31,7 @@ func get_video_ducation(reader *os.File, ext string) float64 {
 		info, err := mp4.Probe(reader)
 		Err_check(err)
 
-		return float64(info.Duration)
+		return float64(info.Duration) / 1000
 	case ".webm":
 		var ret struct {
 			Header  webm.EBMLHeader `ebml:"EBML"`
@@ -37,7 +40,7 @@ func get_video_ducation(reader *os.File, ext string) float64 {
 		err := ebml.Unmarshal(reader, &ret)
 		Err_check(err)
 
-		return ret.Segment.Info.Duration
+		return ret.Segment.Info.Duration / 1000
 	default:
 		return 0
 	}
@@ -55,36 +58,87 @@ func get_wh_from_decode(reader *os.File) (int, int) {
 	return width, height
 }
 
-func get_meta(md5sum, path, ext string, info os.FileInfo) map[string]string {
+func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta map[string]any) map[string]any {
 	name := info.Name()
 	size := info.Size()
-	timestamp := info.ModTime()
+
+	if complete_meta {
+		return map[string]any{"name": name, "size": size,
+			"timestamp": found_meta["timestamp"],
+			"width":     found_meta["width"], "height": found_meta["height"],
+			"duration": found_meta["duration"]}
+	}
+
+	var timestamp string
+	if ts, ok := found_meta["timestamp"]; ok {
+		timestamp = ts.(string)
+	} else {
+		timestamp = info.ModTime().String()
+	}
+
+	var width int
+	var height int
+
+	if w, ok := found_meta["width"]; ok {
+		val, err := strconv.Atoi(w.(string))
+		Err_check(err)
+		width = val
+	}
+	if h, ok := found_meta["height"]; ok {
+		val, err := strconv.Atoi(h.(string))
+		Err_check(err)
+		height = val
+	}
 
 	f, err := os.Open(path)
 	Err_check(err)
 	defer f.Close()
-	x, err := exif.Decode(f)
 
-	// exif data could be extracted
-	if err == nil {
-		tm, err := x.DateTime()
+	if ext == ".jpg" || ext == ".png" || ext == ".gif" {
+		meta, err := imagemeta.Decode(f)
+
+		// exif metadata could be extracted
+		// prefer it over from web
 		if err == nil {
-			timestamp = tm
-		}
+			fmt.Println("inside imagemeta")
 
-		widthTag, err := x.Get(exif.ImageWidth)
-		heightTag, err := x.Get(exif.ImageLength)
+			width = int(meta.ExifIFD.PixelXDimension)
+			height = int(meta.ExifIFD.PixelYDimension)
 
-		if err == nil {
-			width, err := widthTag.Int(0)
+			_, err := f.Seek(0, io.SeekStart)
 			Err_check(err)
-			height, err := heightTag.Int(0)
-			Err_check(err)
+			x, err := xmp.ParseXmp(f)
+			if err == nil {
+				fmt.Printf("%+v\n", x.Basic)
+				cd := x.Basic.CreateDate
+				if !cd.IsZero() {
+					timestamp = cd.String()
+				}
+			}
 		} else {
-			width, height := get_wh_from_decode(f)
+			if (width == 0 || height == 0) && ext != ".mp4" && ext != ".webm" {
+				width, height = get_wh_from_decode(f)
+			}
 		}
 	} else {
-		width, height := get_wh_from_decode(f)
+		if (width == 0 || height == 0) && ext != ".mp4" && ext != ".webm" {
+			width, height = get_wh_from_decode(f)
+		}
 	}
-	return nil
+
+	var duration float64
+	if d, ok := found_meta["duration"]; ok {
+		val, err := strconv.ParseFloat(d.(string), 64)
+		Err_check(err)
+		duration = val
+	}
+
+	if (ext == ".mp4" || ext == ".webm") && duration == 0 {
+		duration = get_video_meta(f, ext)
+	}
+
+	return map[string]any{"name": name, "size": size,
+		"timestamp": timestamp,
+		"width":     width, "height": height,
+		"duration": duration}
 }
