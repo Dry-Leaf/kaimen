@@ -44,31 +44,18 @@ func init() {
 }
 
 func main() {
-	// if _, err := os.Stat(db_path); err != nil {
-	// 	new_db()
-	// }
+	if _, err := os.Stat(db_path); err != nil {
+		new_db()
+	}
 
 	Read_conf()
 
-	// indexing = make(map[string]bool)
-	// initial_crawl()
+	indexing = make(map[string]bool)
+	initial_crawl()
 
-	// go dequeue()
-	// go server()
-	// go open_front()
+	go dequeue()
+	go server()
+	go open_front()
 
-	// mount()
-	//
-	// `D:\pictures-arc\arc23\641e251001a550631de01858a24a687e.webm`
-	// `D:\pictures-arc\arc55\2cb4e866435ad3844f2391f85c4fe6fd.mp4`
-	// //"C:\Users\nobody\Pictures\arc\arc55\cd79af9a9660ad08e8be92009b3818c4.png"
-	// exif test
-	//`D:\pictures-arc\arc23\180f6e381375ae328425332739aa9ff1.jpg`
-	// D:\pictures-arc\arc23\7fe06158739e1884dfc12a1416d47ead.png
-	_, _, found_meta := get_tags("87d15777ea1a7440871cc7fec40f0e62", ".gif")
-	path := `D:\pictures-arc\arc23\87d15777ea1a7440871cc7fec40f0e62.gif`
-	info, err := os.Stat(path)
-	Err_check(err)
-	results := get_meta(path, ".gif", info, false, found_meta)
-	fmt.Println(results)
+	mount()
 }
