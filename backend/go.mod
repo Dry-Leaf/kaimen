@@ -5,6 +5,7 @@ go 1.25.5
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/abema/go-mp4 v1.5.0
+	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/at-wat/ebml-go v0.18.0
 	github.com/coder/websocket v1.8.14
 	github.com/evanoberholster/imagemeta v1.0.0

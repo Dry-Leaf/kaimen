@@ -16,6 +16,7 @@ import (
 	_ "golang.org/x/image/webp"
 
 	"github.com/abema/go-mp4"
+	"github.com/araddon/dateparse"
 	"github.com/at-wat/ebml-go"
 	"github.com/at-wat/ebml-go/webm"
 	"github.com/evanoberholster/imagemeta"
@@ -60,13 +61,16 @@ func get_wh_from_decode(reader *os.File) (int, int) {
 
 func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta map[string]any) map[string]any {
 	name := info.Name()
-	size := info.Size()
+	size := info.Size() //in bytes
 
 	if complete_meta {
+		ts, err := dateparse.ParseAny(found_meta["timestamp"].(string))
+		Err_check(err)
+
 		return map[string]any{"name": name, "size": size,
-			"timestamp": found_meta["timestamp"],
-			"width":     found_meta["width"], "height": found_meta["height"],
-			"duration": found_meta["duration"]}
+			"timestamp": ts.Unix(),
+			"width":     found_meta["width"].(int), "height": found_meta["height"].(int),
+			"duration": found_meta["duration"].(float64)}
 	}
 
 	var timestamp string
@@ -100,8 +104,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		// exif metadata could be extracted
 		// prefer it over from web
 		if err == nil {
-			fmt.Println("inside imagemeta")
-
 			width = int(meta.ExifIFD.PixelXDimension)
 			height = int(meta.ExifIFD.PixelYDimension)
 
@@ -109,7 +111,7 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 			Err_check(err)
 			x, err := xmp.ParseXmp(f)
 			if err == nil {
-				fmt.Printf("%+v\n", x.Basic)
+				fmt.Println("basic date")
 				cd := x.Basic.CreateDate
 				if !cd.IsZero() {
 					timestamp = cd.String()
@@ -137,8 +139,11 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		duration = get_video_meta(f, ext)
 	}
 
+	ts, err := dateparse.ParseAny(timestamp)
+	Err_check(err)
+
 	return map[string]any{"name": name, "size": size,
-		"timestamp": timestamp,
+		"timestamp": ts.Unix(),
 		"width":     width, "height": height,
 		"duration": duration}
 }
