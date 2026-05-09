@@ -44,18 +44,36 @@ func init() {
 }
 
 func main() {
-	if _, err := os.Stat(db_path); err != nil {
-		new_db()
-	}
+	// if _, err := os.Stat(db_path); err != nil {
+	// 	new_db()
+	// }
 
 	Read_conf()
 
-	indexing = make(map[string]bool)
-	initial_crawl()
+	// indexing = make(map[string]bool)
+	// initial_crawl()
 
-	go dequeue()
-	go server()
-	go open_front()
+	// go dequeue()
+	// go server()
+	// go open_front()
 
-	mount()
+	// mount()
+	//
+	// `D:\pictures-arc\arc23\641e251001a550631de01858a24a687e.webm`
+	// `D:\pictures-arc\arc55\2cb4e866435ad3844f2391f85c4fe6fd.mp4`
+	// exif test
+	//`D:\pictures-arc\arc23\180f6e381375ae328425332739aa9ff1.jpg`
+	// D:\pictures-arc\arc23\7fe06158739e1884dfc12a1416d47ead.png
+	md5sum := "7fe06158739e1884dfc12a1416d47ead"
+	ext := ".png"
+	_, _, found_meta := get_tags(md5sum, ext)
+	path := `D:\pictures-arc\arc23\7fe06158739e1884dfc12a1416d47ead.png`
+	info, err := os.Stat(path)
+	Err_check(err)
+
+	fmt.Println("found_meta")
+	fmt.Println(found_meta)
+
+	results := get_meta(path, ext, info, false, found_meta)
+	insert_metadata(md5sum, results)
 }

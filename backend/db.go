@@ -111,6 +111,34 @@ const (
 
 	query_tail = `GROUP BY f.md5;`
 
+	numeric_eq = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property == ? AND numeric_value == ?`
+
+	numeric_gt = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property == ? AND numeric_value >= ?`
+
+	numeric_lt = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property == ? AND numeric_value <= ?`
+
+	text_like = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property == ? AND text_value LIKE '%' || ? ||'%'`
+
+	specific_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property = "timestamp" AND
+		numeric_value >= unixepoch(?)
+		AND numeric_value <= unixepoch(?)`
+
+	// weeks not built into sqlite, will need conversion logic
+	modded_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property = "timestamp" AND
+		numeric_value >= unixepoch('now', ?1)
+		AND numeric_value <= unixepoch('now', ?2)`
+
+	specific_day = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property = "timestamp" AND
+		numeric_value >= unixepoch(?1)
+		AND numeric_value < unixepoch(?1, '+1 day')`
+
 	// need this where clause for exluclusion
 	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
 	//
@@ -327,8 +355,13 @@ func insert_metadata(md5sum string, meta_data map[string]any) {
 	for property, value := range meta_data {
 		var numeric bool
 		switch property {
-		case "name":
+		case "name", "type":
 			numeric = false
+		case "duration":
+			numeric = true
+			if value.(float64) == 0 {
+				continue
+			}
 		default:
 			numeric = true
 		}

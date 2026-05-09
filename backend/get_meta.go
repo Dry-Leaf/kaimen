@@ -63,14 +63,22 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 	name := info.Name()
 	size := info.Size() //in bytes
 
+	var duration float64
+
 	if complete_meta {
 		ts, err := dateparse.ParseAny(found_meta["timestamp"].(string))
 		Err_check(err)
 
+		val, ok := found_meta["duration"].(float64)
+		if ok {
+			duration = val
+		}
+
 		return map[string]any{"name": name, "size": size,
 			"timestamp": ts.Unix(),
 			"width":     found_meta["width"].(int), "height": found_meta["height"].(int),
-			"duration": found_meta["duration"].(float64)}
+			"duration": duration,
+			"type":     ext}
 	}
 
 	var timestamp string
@@ -128,7 +136,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		}
 	}
 
-	var duration float64
 	if d, ok := found_meta["duration"]; ok {
 		val, err := strconv.ParseFloat(d.(string), 64)
 		Err_check(err)
@@ -145,5 +152,7 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 	return map[string]any{"name": name, "size": size,
 		"timestamp": ts.Unix(),
 		"width":     width, "height": height,
-		"duration": duration}
+		"duration": duration,
+		"type":     ext,
+	}
 }
