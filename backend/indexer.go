@@ -46,8 +46,8 @@ var tagdef_count atomic.Uint64
 
 var meta_regex [4]*regexp.Regexp = [4]*regexp.Regexp{
 	regexp.MustCompile(`"created_at":"([^"]*)?`),
-	regexp.MustCompile(`"width":([^,]*)?`),
-	regexp.MustCompile(`"height":([^,]*)?`),
+	regexp.MustCompile(`width":([^,]*)?`),
+	regexp.MustCompile(`height":([^,]*)?`),
 	regexp.MustCompile(`"duration":([^,]*)?`),
 }
 
@@ -235,7 +235,7 @@ func get_tag_cat(tag string) int {
 	return 0
 }
 
-func get_tags(md5sum, ext string) ([]string, bool, map[string]any) {
+func get_tags(md5sum, ext string) ([]string, bool, map[string]string) {
 	confMu.Lock()
 	defer confMu.Unlock()
 
@@ -262,7 +262,7 @@ func get_tags(md5sum, ext string) ([]string, bool, map[string]any) {
 
 			meta_names := [4]string{"timestamp", "width", "height", "duration"}
 
-			found_meta := make(map[string]any)
+			found_meta := make(map[string]string)
 
 			complete_meta := true
 			for i, rexp := range meta_regex {

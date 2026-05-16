@@ -59,47 +59,51 @@ func get_wh_from_decode(reader *os.File) (int, int) {
 	return width, height
 }
 
-func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta map[string]any) map[string]any {
+func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta map[string]string) map[string]any {
 	name := info.Name()
 	size := info.Size() //in bytes
 
+	var width int
+	var height int
+
+	if w, ok := found_meta["width"]; ok {
+		val, err := strconv.Atoi(w)
+		Err_check(err)
+		width = val
+	}
+	if h, ok := found_meta["height"]; ok {
+		val, err := strconv.Atoi(h)
+		Err_check(err)
+		height = val
+	}
+
 	var duration float64
 
-	if complete_meta {
-		ts, err := dateparse.ParseAny(found_meta["timestamp"].(string))
+	if d, ok := found_meta["duration"]; ok {
+		fmt.Println("test")
+		val, err := strconv.ParseFloat(d, 64)
 		Err_check(err)
+		duration = val
+	}
 
-		val, ok := found_meta["duration"].(float64)
-		if ok {
-			duration = val
-		}
+	// none of the below will work. everything in found_meta is actually string
+	if complete_meta {
+		fmt.Println("complete")
+		ts, err := dateparse.ParseAny(found_meta["timestamp"])
+		Err_check(err)
 
 		return map[string]any{"name": name, "size": size,
 			"timestamp": ts.Unix(),
-			"width":     found_meta["width"].(int), "height": found_meta["height"].(int),
+			"width":     width, "height": height,
 			"duration": duration,
 			"type":     ext}
 	}
 
 	var timestamp string
 	if ts, ok := found_meta["timestamp"]; ok {
-		timestamp = ts.(string)
+		timestamp = ts
 	} else {
 		timestamp = info.ModTime().String()
-	}
-
-	var width int
-	var height int
-
-	if w, ok := found_meta["width"]; ok {
-		val, err := strconv.Atoi(w.(string))
-		Err_check(err)
-		width = val
-	}
-	if h, ok := found_meta["height"]; ok {
-		val, err := strconv.Atoi(h.(string))
-		Err_check(err)
-		height = val
 	}
 
 	f, err := os.Open(path)
@@ -134,12 +138,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		if (width == 0 || height == 0) && ext != ".mp4" && ext != ".webm" {
 			width, height = get_wh_from_decode(f)
 		}
-	}
-
-	if d, ok := found_meta["duration"]; ok {
-		val, err := strconv.ParseFloat(d.(string), 64)
-		Err_check(err)
-		duration = val
 	}
 
 	if (ext == ".mp4" || ext == ".webm") && duration == 0 {

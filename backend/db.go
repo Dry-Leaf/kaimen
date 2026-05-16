@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -31,7 +33,7 @@ const (
 		file_path TEXT NOT NULL,
 		ignore INTEGER NOT NULL,
 	);`
-	// width, height, size of file, mod time OR EXIF(XMP Toolkit) tag Create Date, length time(duration of track 1)
+	// name, type, width, height, size(in bytes), mod time OR XMP Create Date, duration of videos(in seconds)
 	metadata_table = `CREATE TABLE IF NOT EXISTS metadata (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		property TEXT NOT NULL,
@@ -128,27 +130,26 @@ const (
 		numeric_value >= unixepoch(?)
 		AND numeric_value <= unixepoch(?)`
 
-	// weeks not built into sqlite, will need conversion logic
-	modded_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property = "timestamp" AND
-		numeric_value >= unixepoch('now', ?1)
-		AND numeric_value <= unixepoch('now', ?2)`
-
 	specific_day = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
 		WHERE property = "timestamp" AND
 		numeric_value >= unixepoch(?1)
 		AND numeric_value < unixepoch(?1, '+1 day')`
 
-	// need this where clause for exluclusion
-	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
-	//
-	// SELECT f.file_path FROM files f
-	// JOIN file_tags ft1 ON ft1.md5 = f.md5 AND ft1.tag = 'include_tag1'
-	// JOIN file_tags ft2 ON ft2.md5 = f.md5 AND ft2.tag = 'include_tag2'
-	// LEFT JOIN file_tags fe1 ON fe1.md5 = f.md5 AND fe1.tag = 'exclude_tag1'
-	// LEFT JOIN file_tags fe2 ON fe2.md5 = f.md5 AND fe2.tag = 'exclude_tag2'
-	// WHERE fe1.md5 IS NULL AND fe2.md5 IS NULL;
+	// weeks not built into sqlite, will need conversion logic
+	modded_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
+		WHERE property = "timestamp" AND
+		numeric_value <= unixepoch('now', ?)
+		AND numeric_value >= unixepoch('now', ?)`
 )
+
+var meta_query_patterns = map[string]*regexp.Regexp{
+	"name":     regexp.MustCompile(`name:(.+)`),
+	"width":    regexp.MustCompile(`width:([<>])?(\d+)`),
+	"height":   regexp.MustCompile(`height:([<>])?(\d+)`),
+	"duration": regexp.MustCompile(`duration:([<>])?(\d+)([smh])`),
+	"date":     regexp.MustCompile(`date:(\d+-\d\d-\d\d)(?:..(\d+-\d\d-\d\d))?`),
+	"age":      regexp.MustCompile(`age:(\d+)(mo|[smhdwy])\.\.(\d+)(mo|[smhdwy])`),
+}
 
 func ignore_check(md5sum string) int {
 	conn, err := sql.Open("sqlite3", db_uri)
@@ -251,12 +252,86 @@ func get_suggestions(query string) []tag {
 	return result
 }
 
-func query(q_string string) []string {
-	var nams []string
+func age_modifier_build(number, raw string) string {
+	var val string
+	switch raw {
+	case "s":
+		val = " seconds"
+	case "m":
+		val = " minutes"
+	case "h":
+		val = " hours"
+	case "d":
+		val = " days"
+	case "mo":
+		val = " months"
+	case "y":
+		val = " years"
+	case "w":
+		val = " days"
 
+		n, err := strconv.Atoi(number)
+		Err_check(err)
+		n *= 7
+		number = strconv.Itoa(n)
+	}
+	return "-" + number + val
+}
+
+func meta_query_build(pattern string, groups []string) (string, []any) {
+	var fquery string
+	var params []any
+
+	switch pattern {
+	case "name":
+		fquery = text_like
+		params = []any{pattern, groups[1]}
+	case "duration":
+		n, err := strconv.Atoi(groups[2])
+		Err_check(err)
+
+		if groups[3] == "m" {
+			n *= 60
+		}
+		if groups[3] == "h" {
+			n *= 3600
+		}
+
+		groups[2] = strconv.Itoa(n)
+		fallthrough
+	case "width", "height":
+		params = []any{pattern, groups[2]}
+
+		if groups[1] == "" {
+			fquery = numeric_eq
+		} else if groups[1] == ">" {
+			fquery = numeric_gt
+		} else {
+			fquery = numeric_lt
+		}
+	case "date":
+		if len(groups) > 2 {
+			fquery = specific_time_range
+			params = []any{groups[1], groups[2]}
+		} else {
+			fquery = specific_day
+			params = []any{groups[1]}
+		}
+	case "age":
+		fquery = modded_time_range
+		param1 := age_modifier_build(groups[1], groups[2])
+		param2 := age_modifier_build(groups[3], groups[4])
+		params = []any{param1, param2}
+	}
+
+	return fquery, params
+}
+
+func tag_query_build(q_string string) string {
+	var fquery string
 	tags := strings.Split(q_string, " ")
 
-	fquery := query_head
+	fquery = query_head
 
 	if len(tags) == 1 && strings.ToLower(tags[0]) == "ignored" {
 		fquery += ignored_query
@@ -292,13 +367,38 @@ func query(q_string string) []string {
 			}
 		}
 	}
-	//fmt.Print(fquery)
+	return fquery + query_tail
+}
 
+func query(q_string string) []string {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
 
-	file_rows, err := conn.Query(fquery + query_tail)
+	var fquery string
+	var params []any
+	var nams []string
+
+	meta_query := false
+	var pattern string
+	var groups []string
+
+	for p, r := range meta_query_patterns {
+		if g := r.FindStringSubmatch(q_string); g != nil {
+			meta_query = true
+			pattern = p
+			groups = g
+			break
+		}
+	}
+
+	if meta_query {
+		fquery, params = meta_query_build(pattern, groups)
+	} else {
+		fquery = tag_query_build(q_string)
+	}
+
+	file_rows, err := conn.Query(fquery, params...)
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
