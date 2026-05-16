@@ -106,19 +106,40 @@ class _IndexingBoxState extends ConsumerState<IndexingBox> {
 class SearchPage extends ConsumerStatefulWidget {
   const SearchPage({super.key, required this.title});
   final String documentation = """blonde_hair blue_eyes
-Search for posts that have both blonde hair and blue eyes.
+tagged with blonde hair and blue eyes
 
 -blonde_hair -blue_eyes
-Search for posts that don't have blonde hair or blue eyes.
+tagged with blonde hair or blue eyes
 
 %_shirt
-Wildcard pattern search.
-This example will match tag names with any or no text,
-followed by _shirt, effectively returning many tags
-that have something to do with shirts.
+Wildcard search
+e.g. matches tags with any or no text,
+followed by _shirt
 
 ignored
-Returns images that tags were not found for.""";
+tags were not found for""";
+  final String meta_documentation = """name:ex
+includes 'ex' in their file name
+
+width:5
+has a width of 5 pixels
+
+height:>5
+has a height of at least 5 pixels
+
+duration:<5s
+videos that are at most 5 seconds
+valid units: s(seconds), m(minutes) and h(hours)
+
+date:2007-01-01
+timestamp within 2007-01-01
+
+date:2007-01-01..2010-01-01
+timestamp between 2007-01-01 and 2010-01-01
+
+age:2w..1y
+timestamp between 2 weeks and 1 year ago
+valid units: d(days), w(weeks), mo(months), y(years)""";
 
   final String title;
 
@@ -169,8 +190,25 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (context) =>
-                    AlertDialog(content: Text(widget.documentation)),
+                builder: (context) => AlertDialog(
+                  content: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          textScaler: const TextScaler.linear(.8),
+                          widget.documentation,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          textScaler: const TextScaler.linear(.8),
+                          widget.meta_documentation,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               );
             },
           ),

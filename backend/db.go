@@ -310,7 +310,7 @@ func meta_query_build(pattern string, groups []string) (string, []any) {
 			fquery = numeric_lt
 		}
 	case "date":
-		if len(groups) > 2 {
+		if groups[2] != "" {
 			fquery = specific_time_range
 			params = []any{groups[1], groups[2]}
 		} else {
@@ -397,6 +397,9 @@ func query(q_string string) []string {
 	} else {
 		fquery = tag_query_build(q_string)
 	}
+
+	fmt.Println("fquery")
+	fmt.Println(fquery)
 
 	file_rows, err := conn.Query(fquery, params...)
 	if err != sql.ErrNoRows {
