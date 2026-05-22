@@ -7,8 +7,10 @@ import '_backend_conn.dart' show Message, connProvider;
 
 import '_search_page.dart' show SearchPage;
 import '_settings_page.dart' show SettingsPage;
+import '_edit_page.dart' show TagEditPage;
 
 import 'package:tray_manager/tray_manager.dart';
+import 'package:fvp/fvp.dart' as fvp;
 
 Future<void> setupTray(ProviderContainer container) async {
   final iconPath = Platform.isWindows ? 'kaimen.ico' : 'kaimen.png';
@@ -68,6 +70,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
+  fvp.registerWith();
+
   final container = ProviderContainer();
   container.listen(connProvider, (_, __) {});
 
@@ -114,6 +118,9 @@ class _UIState extends State<UI> {
             break;
           case '/settings':
             page = SettingsPage();
+            break;
+          case '/tagedit':
+            page = TagEditPage();
             break;
           default:
             return null;

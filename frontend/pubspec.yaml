@@ -52,6 +52,8 @@ dependencies:
   flutter_spinkit: ^5.2.2
 
   tray_manager: ^0.5.2
+  video_player: ^2.11.1
+  fvp: ^0.37.0
 
 dev_dependencies:
   flutter_test:

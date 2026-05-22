@@ -40,6 +40,7 @@ const (
 	deletedirectory
 	editdirectory
 	getconf
+	gettags
 	openresults
 	kill
 )
@@ -160,6 +161,12 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case getconf:
 			conf := gather_conf()
 			resp := message{Type: getconf, Value: conf}
+			wsjson.Write(ctx, c, resp)
+		case gettags:
+			info := gather_tags(req.Value.(string))
+			fmt.Println("gathered info")
+			fmt.Println(info)
+			resp := message{Type: gettags, Value: info}
 			wsjson.Write(ctx, c, resp)
 		case createsource, editsource, deletesource, reordersources, editignore, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)

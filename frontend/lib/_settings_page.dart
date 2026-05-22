@@ -46,6 +46,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: const Text('Settings'),
           actions: <Widget>[
             IconButton(
+              tooltip: 'Search',
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.pushNamed(context, '/');
+              },
+            ),
+            IconButton(
+              tooltip: 'Edit Tags',
+              icon: const Icon(Icons.sell),
+              onPressed: () {
+                Navigator.pushNamed(context, '/tagedit');
+              },
+            ),
+            IconButton(
               icon: const Icon(Icons.close),
               onPressed: () {
                 windowManager.hide();

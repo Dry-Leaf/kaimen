@@ -140,6 +140,10 @@ const (
 		WHERE property = "timestamp" AND
 		numeric_value <= unixepoch('now', ?)
 		AND numeric_value >= unixepoch('now', ?)`
+
+	gather_query = `SELECT tag FROM file_tags WHERE md5 = ?`
+
+	path_query = `SELECT file_path FROM files WHERE md5 = ?`
 )
 
 var meta_query_patterns = map[string]*regexp.Regexp{
@@ -149,6 +153,42 @@ var meta_query_patterns = map[string]*regexp.Regexp{
 	"duration": regexp.MustCompile(`duration:([<>])?(\d+)([smh])`),
 	"date":     regexp.MustCompile(`date:(\d+-\d\d-\d\d)(?:..(\d+-\d\d-\d\d))?`),
 	"age":      regexp.MustCompile(`age:(\d+)(mo|[smhdwy])\.\.(\d+)(mo|[smhdwy])`),
+}
+
+func gather_tags(md5sum string) map[string]string {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	rows, err := conn.Query(gather_query, md5sum)
+	if err != sql.ErrNoRows {
+		Err_check(err)
+	}
+	defer rows.Close()
+
+	var tag_arr []string
+
+	for rows.Next() {
+		var ctag string
+		err = rows.Scan(&ctag)
+
+		tag_arr = append(tag_arr, ctag)
+	}
+
+	tags := strings.Join(tag_arr, " ")
+
+	var path string
+
+	path_query_stmt, err := conn.Prepare(path_query)
+	Err_check(err)
+	err = path_query_stmt.QueryRow(md5sum).Scan(&path)
+	if err != sql.ErrNoRows {
+		Err_check(err)
+	} else {
+		return map[string]string{"path": "n/a", "tags": tags}
+	}
+
+	return map[string]string{"path": path, "tags": tags}
 }
 
 func ignore_check(md5sum string) int {
@@ -236,6 +276,7 @@ func get_suggestions(query string) []tag {
 
 	rows, err := conn.Query(tag_query, query)
 	Err_check(err)
+	defer rows.Close()
 
 	var result []tag
 
@@ -405,6 +446,7 @@ func query(q_string string) []string {
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
+	defer file_rows.Close()
 
 	for file_rows.Next() {
 		var cmirror MIRROR_FILE
@@ -430,6 +472,7 @@ func query_recent() []string {
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
+	defer file_rows.Close()
 
 	for file_rows.Next() {
 		var cmirror MIRROR_FILE

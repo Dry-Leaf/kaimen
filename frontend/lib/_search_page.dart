@@ -213,6 +213,13 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             },
           ),
           IconButton(
+            tooltip: 'Edit Tags',
+            icon: const Icon(Icons.sell),
+            onPressed: () {
+              Navigator.pushNamed(context, '/tagedit');
+            },
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {
