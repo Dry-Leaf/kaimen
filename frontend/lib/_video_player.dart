@@ -127,8 +127,8 @@ class _DesktopFriendlyVideoPlayerState
         1.0;
 
     return SizedBox(
-      height: 300,
-      width: 300,
+      height: 335,
+      width: 335,
       child: Align(
         alignment: Alignment.centerLeft,
         child: AspectRatio(

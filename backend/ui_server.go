@@ -41,6 +41,7 @@ const (
 	editdirectory
 	getconf
 	gettags
+	sendtags
 	openresults
 	kill
 )
@@ -138,19 +139,20 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case autosuggest:
-			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.(string)), "-")
+			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.([]interface{})[0].(string)), "-")
 
 			var results []tag
 			if lw != "" {
-				results = get_suggestions(lw)
+				results = get_suggestions(lw, req.Value.([]interface{})[1].(float64))
 			}
 			resp := message{Type: autosuggest, Value: results}
 
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case userquery:
-			if len(req.Value.(string)) > 0 {
-				nams = append([]string{".", ".."}, query(req.Value.(string))...)
+			value := req.Value.(string)
+			if len(value) > 0 {
+				nams = append([]string{".", ".."}, query(value)...)
 				initial_query = false
 			} else {
 				nams = append([]string{".", ".."}, query_recent()...)
@@ -168,6 +170,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(info)
 			resp := message{Type: gettags, Value: info}
 			wsjson.Write(ctx, c, resp)
+		case sendtags:
+			value := req.Value.(string)
+			if len(value) > 0 {
+				overwrite_tags(value)
+			}
 		case createsource, editsource, deletesource, reordersources, editignore, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)
 		case openresults:

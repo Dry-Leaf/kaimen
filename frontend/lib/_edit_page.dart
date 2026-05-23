@@ -3,39 +3,157 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 
-import '_backend_conn.dart'
-    show Conn, Message, messageByTypeProvider, connProvider;
+import '_backend_conn.dart' show Message, messageByTypeProvider;
 
 import '_video_player.dart' show DesktopFriendlyVideoPlayer;
+import "_search_box.dart" show WithSuggestions;
+import '_suggestions.dart' show Suggestion, SuggestionList;
+
+class TagInputText extends Notifier<String> {
+  @override
+  String build() => "";
+
+  void update(String newText) => state = newText;
+}
+
+final tagInputTextProvider = NotifierProvider<TagInputText, String>(
+  TagInputText.new,
+);
 
 class TagEditPage extends ConsumerStatefulWidget {
   const TagEditPage({super.key});
 
   @override
-  ConsumerState<TagEditPage> createState() => _TagEditPageState();
+  ConsumerState createState() => _TagEditPageState();
 }
 
-class _TagEditPageState extends ConsumerState<TagEditPage> {
-  late final Conn conn;
+class _TagEditPageState extends ConsumerState with WithSuggestions {
+  late final TextEditingController hashController;
 
   @override
   void initState() {
     super.initState();
+    hashController = TextEditingController();
 
-    conn = ref
-        .read(connProvider)
-        .maybeWhen(
-          data: (conn) => conn,
-          orElse: () => throw Exception('Connection not ready'),
-        );
+    initSuggestions(3);
+
+    textController.addListener(() {
+      ref.read(tagInputTextProvider.notifier).update(textController.text);
+    });
+  }
+
+  @override
+  void dispose() {
+    hashController.dispose();
+    super.dispose();
+  }
+
+  void _onHashSubmitted(String value) {
+    if (value.isNotEmpty) {
+      ref.read(tagInputTextProvider.notifier).update("");
+      textController.clear();
+      hashController.clear();
+      conn.send(Message.gettags, value);
+    }
+  }
+
+  Widget createTextBox(dynamic info) {
+    return OverlayPortal(
+      controller: overlayController,
+      overlayChildBuilder: (context) => UnconstrainedBox(
+        child: CompositedTransformFollower(
+          link: link,
+          targetAnchor: Alignment.bottomLeft,
+          followerAnchor: Alignment.topLeft,
+          offset: const Offset(0, .5),
+          child: ValueListenableBuilder<List<Suggestion>>(
+            valueListenable: suggestions,
+            builder: (context, currentSuggestions, _) {
+              if (currentSuggestions.isEmpty) return const SizedBox.shrink();
+              final double targetWidth = link.leaderSize?.width ?? 100.0;
+
+              return SizedBox(
+                width: targetWidth,
+                height: suggestions.value.length * 27 + 2,
+                child: SuggestionList(
+                  suggestions,
+                  textController,
+                  textFieldFocusNode,
+                  suggestionsFocusNode,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      child: CompositedTransformTarget(
+        link: link,
+        child: Focus(
+          onFocusChange: (hasFocus) {
+            if (hasFocus) {
+              priorIndex = 0;
+            }
+          },
+          onKeyEvent: handleKeyEvent,
+          child: TextFormField(
+            focusNode: textFieldFocusNode,
+            controller: textController,
+            minLines: 9,
+            maxLines: 9,
+            keyboardType: TextInputType.multiline,
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              hintText: 'Enter tags here...',
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    var controller = TextEditingController();
-
-    AsyncValue<dynamic> info = ref.watch(
+    final AsyncValue<dynamic> info = ref.watch(
       messageByTypeProvider(Message.gettags),
+    );
+
+    final preservedText = ref.watch(tagInputTextProvider);
+
+    info.whenData((data) {
+      if (data != null && data["path"] != "n/a") {
+        final String incomingTags = data["tags"] ?? "";
+
+        if (textController.text.isEmpty) {
+          if (preservedText.isNotEmpty) {
+            textController.text = preservedText;
+          } else {
+            textController.text = incomingTags;
+          }
+        }
+      }
+    });
+
+    final autosuggestMessage = ref.watch(
+      messageByTypeProvider(Message.autosuggest),
+    );
+
+    autosuggestMessage.when(
+      data: (msg) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (msg == null) {
+            suggestions.value = [];
+            return;
+          }
+
+          final parsed = (msg as List)
+              .map((e) => Suggestion.fromJson(e))
+              .toList();
+
+          suggestions.value = parsed;
+        });
+      },
+      loading: () {},
+      error: (_, _) {},
     );
 
     return Scaffold(
@@ -74,18 +192,12 @@ class _TagEditPageState extends ConsumerState<TagEditPage> {
               width: 370,
               child: TextField(
                 maxLength: 32,
-                controller: controller,
-                onSubmitted: (value) {
-                  if (value.isNotEmpty) {
-                    conn.send(Message.gettags, value);
-                  }
-                },
+                controller: hashController,
+                onSubmitted: _onHashSubmitted,
                 decoration: InputDecoration(
                   hintText: "e.g. 5a8420afd7ea4b3e4bbf4186c02570ee",
                   suffixIcon: IconButton(
-                    onPressed: () {
-                      conn.send(Message.gettags, controller.text);
-                    },
+                    onPressed: () => _onHashSubmitted(hashController.text),
                     icon: const Icon(Icons.tag),
                   ),
                 ),
@@ -118,8 +230,8 @@ class _TagEditPageState extends ConsumerState<TagEditPage> {
                         ? DesktopFriendlyVideoPlayer(videoPath: path)
                         : Image.file(
                             File(path),
-                            height: 300,
-                            width: 300,
+                            height: 335,
+                            width: 335,
                             fit: BoxFit.contain,
                             alignment: Alignment.centerLeft,
                           ),
@@ -127,17 +239,7 @@ class _TagEditPageState extends ConsumerState<TagEditPage> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.only(left: 10.0),
-                        child: TextFormField(
-                          minLines: 13,
-                          maxLines: 13,
-                          key: ValueKey(info["path"]),
-                          keyboardType: TextInputType.multiline,
-                          initialValue: info["tags"],
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            hintText: 'Enter tags here...',
-                          ),
-                        ),
+                        child: createTextBox(info),
                       ),
                     ),
                   ],
@@ -149,7 +251,7 @@ class _TagEditPageState extends ConsumerState<TagEditPage> {
       ),
 
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () => {sendInput(Message.sendtags)},
         tooltip: 'Save Changes',
         child: const Icon(Icons.save),
       ),

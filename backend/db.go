@@ -17,6 +17,7 @@ import (
 var (
 	db_uri         string
 	db_path        string
+	prev_md5sum    string
 	insert_counter = 0
 )
 
@@ -49,7 +50,8 @@ const (
 	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name)  ON DELETE CASCADE,
-		inferred INTEGER
+		inferred INTEGER,
+		PRIMARY KEY (md5,tag)
 	);`
 
 	new_meta = `INSERT INTO metadata(md5,property,numeric_value,text_value) VALUES(?,?,?,?)
@@ -69,7 +71,8 @@ const (
 			WHERE name = OLD.tag;
 		END;`
 
-	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?);`
+	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)
+		ON CONFLICT(md5, tag) DO NOTHING;`
 
 	ignore_exists = `SELECT COUNT(md5) FROM files WHERE md5 = ? AND ignore = TRUE;`
 
@@ -85,6 +88,8 @@ const (
 
 	deletion = `DELETE FROM files WHERE file_path = ?;`
 
+	tag_clear = `DELETE FROM file_tags WHERE md5 = ?;`
+
 	optimize = `PRAGMA optimize;`
 
 	file_index = `CREATE INDEX idx_files_md5 ON files (md5);`
@@ -97,7 +102,7 @@ const (
 
 	file_count = `SELECT COUNT(*) FROM files WHERE ignore = FALSE;`
 
-	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT 10;`
+	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT ?;`
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
@@ -188,6 +193,8 @@ func gather_tags(md5sum string) map[string]string {
 		return map[string]string{"path": "n/a", "tags": tags}
 	}
 
+	prev_md5sum = md5sum
+
 	return map[string]string{"path": path, "tags": tags}
 }
 
@@ -269,12 +276,12 @@ type tag struct {
 	Remainder string `json:"Remainder"`
 }
 
-func get_suggestions(query string) []tag {
+func get_suggestions(query string, limit float64) []tag {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
 
-	rows, err := conn.Query(tag_query, query)
+	rows, err := conn.Query(tag_query, query, limit)
 	Err_check(err)
 	defer rows.Close()
 
@@ -411,6 +418,59 @@ func tag_query_build(q_string string) string {
 	return fquery + query_tail
 }
 
+func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
+	new_relation_stmt, err := tx.Prepare(new_relation)
+	Err_check(err)
+
+	new_tag_stmt, err := tx.Prepare(new_tag)
+	Err_check(err)
+
+	update_tag_stmt, err := tx.Prepare(update_tag_cat)
+	Err_check(err)
+
+	for _, tag := range tags {
+		row := new_tag_stmt.QueryRow(tag)
+
+		var freq int
+		var category int
+		err := row.Scan(&freq, &category)
+		Err_check(err)
+
+		if freq == 1 {
+			if category == 0 {
+				//fmt.Printf("new tag %s\n", tag)
+				cat := get_tag_cat(tag)
+				if cat != 0 {
+					update_tag_stmt.Exec(cat, tag)
+				}
+			}
+			if category == -1 {
+				update_tag_stmt.Exec(0, tag)
+			}
+		}
+		new_relation_stmt.Exec(md5sum, tag)
+	}
+}
+
+func overwrite_tags(t_string string) {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	clear_stmt, err := tx.Prepare(tag_clear)
+	Err_check(err)
+	clear_stmt.Exec(prev_md5sum)
+
+	tags := strings.Split(t_string, " ")
+
+	tag_iterate(prev_md5sum, tags, tx)
+
+	tx.Commit()
+}
+
 func query(q_string string) []string {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
@@ -539,43 +599,7 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 		return
 	}
 
-	new_relation_stmt, err := tx.Prepare(new_relation)
-	Err_check(err)
-
-	new_tag_stmt, err := tx.Prepare(new_tag)
-	Err_check(err)
-
-	//fmt.Printf("%s tag cats \n", path)
-
-	for _, tag := range tags {
-		row := new_tag_stmt.QueryRow(tag)
-
-		var freq int
-		var category int
-		err := row.Scan(&freq, &category)
-		Err_check(err)
-
-		if freq == 1 {
-			if category == 0 {
-				//fmt.Printf("new tag %s\n", tag)
-				cat := get_tag_cat(tag)
-				if cat != 0 {
-					update_tag_stmt, err := tx.Prepare(update_tag_cat)
-					Err_check(err)
-					update_tag_stmt.Exec(cat, tag)
-				}
-			}
-			if category == -1 {
-				//fmt.Printf("existing tag %s\n", tag)
-				update_tag_stmt, err := tx.Prepare(update_tag_cat)
-				Err_check(err)
-				update_tag_stmt.Exec(0, tag)
-			}
-		} else {
-			//fmt.Printf("existing tag %s\n", tag)
-		}
-		new_relation_stmt.Exec(md5sum, tag)
-	}
+	tag_iterate(md5sum, tags, tx)
 
 	insert_counter += 1
 

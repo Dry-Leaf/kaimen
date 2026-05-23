@@ -9,133 +9,144 @@ import '_suggestions.dart' show Suggestion, SuggestionList;
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
 
-class TextInput extends ConsumerStatefulWidget {
-  const TextInput({super.key});
-
-  @override
-  ConsumerState<TextInput> createState() => _TextInput();
-}
-
-class _TextInput extends ConsumerState<TextInput> {
-  final _textController = TextEditingController();
-  final _overlayController = OverlayPortalController();
-  final _link = LayerLink();
-  late final ValueNotifier<List<Suggestion>> _suggestions;
+mixin WithSuggestions on ConsumerState {
+  final textController = TextEditingController();
+  String priorText = "";
   late final Conn conn;
-  final _prior = Queue<String>();
-  int _priorIndex = 0;
-  String _priorText = "";
 
-  final FocusNode _textFieldFocusNode = FocusNode();
-  final FocusNode _suggestionsFocusNode = FocusNode();
+  final FocusNode textFieldFocusNode = FocusNode();
+  final FocusNode suggestionsFocusNode = FocusNode();
+
+  late final ValueNotifier<List<Suggestion>> suggestions;
+  final overlayController = OverlayPortalController();
 
   @override
   void dispose() {
-    _textController.dispose();
+    textController.dispose();
     super.dispose();
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _suggestions = ValueNotifier<List<Suggestion>>([]);
+  void initSuggestions([int suggLimit = 10]) {
+    suggestions = ValueNotifier<List<Suggestion>>([]);
 
-    conn = ref
-        .read(connProvider)
-        .maybeWhen(
-          data: (conn) => conn,
-          orElse: () => throw Exception('Connection not ready'),
-        );
+    conn = ref.read(connProvider).requireValue;
 
-    _textController.addListener(_autoSuggestReq);
-    _textFieldFocusNode.addListener(_updateVisibilityChange);
-    _textFieldFocusNode.addListener(_handleFocusAndCaret);
-    _suggestions.addListener(_updateVisibilityChange);
-    _textController.addListener(_updateVisibilityChange);
-    _suggestionsFocusNode.addListener(_updateVisibilityChange);
+    textController.addListener(() => autoSuggestReq(suggLimit));
+    textFieldFocusNode.addListener(updateVisibilityChange);
+    textFieldFocusNode.addListener(handleFocusAndCaret);
+    suggestions.addListener(updateVisibilityChange);
+    textController.addListener(updateVisibilityChange);
+    suggestionsFocusNode.addListener(updateVisibilityChange);
   }
 
-  void _handleFocusAndCaret() {
-    if (_textFieldFocusNode.hasFocus) {
+  void autoSuggestReq(int suggLimit) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (textController.text.isNotEmpty) {
+        if (textController.text == priorText) {
+          return;
+        }
+        setState(() {
+          priorText = textController.text;
+        });
+        conn.send(Message.autosuggest, [textController.text, suggLimit]);
+      }
+    });
+  }
+
+  void updateVisibilityChange() {
+    final tfHasFocus = textFieldFocusNode.hasFocus;
+    final sHasFocus = suggestionsFocusNode.hasFocus;
+    final hasText = textController.text.isNotEmpty;
+
+    if ((tfHasFocus || sHasFocus) &&
+        (suggestions.value.isNotEmpty) &&
+        hasText) {
+      overlayController.show();
+    } else {
+      overlayController.hide();
+    }
+  }
+
+  void handleFocusAndCaret() {
+    if (textFieldFocusNode.hasFocus) {
       Future.microtask(() {
-        final int textLength = _textController.text.length;
-        _textController.selection = TextSelection.fromPosition(
+        final int textLength = textController.text.length;
+        textController.selection = TextSelection.fromPosition(
           TextPosition(offset: textLength),
         );
       });
     }
   }
 
-  void _autoSuggestReq() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_textController.text.isNotEmpty) {
-        if (_textController.text == _priorText) {
-          return;
-        }
-        setState(() {
-          _priorText = _textController.text;
-        });
-        conn.send(Message.autosuggest, _textController.text);
-      }
-    });
-  }
+  final link = LayerLink();
+  final prior = Queue<String>();
+  int priorIndex = 0;
 
-  void _sendQuery() {
-    conn.send(Message.userquery, _textController.text);
-    _prior.addFirst(_textController.text);
-    if (_prior.length > 5) {
-      _prior.removeLast();
-    }
-    _textController.text = "";
-    _updateVisibilityChange();
-  }
-
-  void _updateVisibilityChange() {
-    final tfHasFocus = _textFieldFocusNode.hasFocus;
-    final sHasFocus = _suggestionsFocusNode.hasFocus;
-    final hasText = _textController.text.isNotEmpty;
-
-    if ((tfHasFocus || sHasFocus) &&
-        (_suggestions.value.isNotEmpty) &&
-        hasText) {
-      _overlayController.show();
-    } else {
-      _overlayController.hide();
-    }
-  }
-
-  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+  KeyEventResult handleKeyEvent(
+    FocusNode node,
+    KeyEvent event, {
+    bool query = false,
+  }) {
     if (event is KeyDownEvent) {
-      if (_textFieldFocusNode.hasFocus) {
+      if (textFieldFocusNode.hasFocus) {
         if (event.logicalKey == LogicalKeyboardKey.tab &&
-            _suggestions.value.isNotEmpty) {
-          _textController.text += '${_suggestions.value[0].remainder} ';
-          _textController.selection = TextSelection.collapsed(
-            offset: _textController.text.length,
+            suggestions.value.isNotEmpty) {
+          textController.text += '${suggestions.value[0].remainder} ';
+          textController.selection = TextSelection.collapsed(
+            offset: textController.text.length,
           );
           return KeyEventResult.handled;
         } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
-            _suggestions.value.isNotEmpty) {
-          _suggestionsFocusNode.requestFocus();
+            suggestions.value.isNotEmpty) {
+          suggestionsFocusNode.requestFocus();
           return KeyEventResult.handled;
         } else if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
-            _prior.isNotEmpty) {
-          _textController.text = _prior.elementAt(_priorIndex);
-          _priorIndex += 1;
-          if (_priorIndex > _prior.length - 1) {
-            _priorIndex = 0;
+            query &&
+            prior.isNotEmpty) {
+          textController.text = prior.elementAt(priorIndex);
+          priorIndex += 1;
+          if (priorIndex > prior.length - 1) {
+            priorIndex = 0;
           }
-          _textController.selection = TextSelection.collapsed(
-            offset: _textController.text.length,
+          textController.selection = TextSelection.collapsed(
+            offset: textController.text.length,
           );
           return KeyEventResult.handled;
-        } else if (_textFieldFocusNode.hasFocus &&
+        } else if (textFieldFocusNode.hasFocus &&
+            query &&
             event.logicalKey == LogicalKeyboardKey.enter) {
-          _sendQuery();
+          sendInput();
         }
       }
     }
     return KeyEventResult.ignored;
+  }
+
+  void sendInput([Message mesType = Message.userquery]) {
+    conn.send(mesType, textController.text);
+    prior.addFirst(textController.text);
+    if (prior.length > 5) {
+      prior.removeLast();
+    }
+    if (mesType == Message.userquery) {
+      textController.text = "";
+    }
+    updateVisibilityChange();
+  }
+}
+
+class TextInput extends ConsumerStatefulWidget {
+  const TextInput({super.key});
+
+  @override
+  ConsumerState createState() => _TextInput();
+}
+
+class _TextInput extends ConsumerState with WithSuggestions {
+  @override
+  void initState() {
+    super.initState();
+    initSuggestions();
   }
 
   @override
@@ -148,7 +159,7 @@ class _TextInput extends ConsumerState<TextInput> {
       data: (msg) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (msg == null) {
-            _suggestions.value = [];
+            suggestions.value = [];
             return;
           }
 
@@ -156,32 +167,34 @@ class _TextInput extends ConsumerState<TextInput> {
               .map((e) => Suggestion.fromJson(e))
               .toList();
 
-          _suggestions.value = parsed;
+          suggestions.value = parsed;
         });
       },
       loading: () {},
-      error: (_, __) {},
+      error: (_, _) {},
     );
 
     return OverlayPortal(
-      controller: _overlayController,
+      controller: overlayController,
       overlayChildBuilder: (context) => UnconstrainedBox(
         child: CompositedTransformFollower(
-          link: _link,
+          link: link,
           targetAnchor: Alignment.bottomLeft,
           followerAnchor: Alignment.topLeft,
           offset: const Offset(0, .5),
           child: ValueListenableBuilder<List<Suggestion>>(
-            valueListenable: _suggestions,
-            builder: (context, suggestions, _) {
+            valueListenable: suggestions,
+            builder: (context, _, _) {
+              final double targetWidth = link.leaderSize?.width ?? 100.0;
+
               return SizedBox(
-                width: 550,
-                height: _suggestions.value.length * 27 + 2,
+                width: targetWidth,
+                height: suggestions.value.length * 27 + 2,
                 child: SuggestionList(
-                  _suggestions,
-                  _textController,
-                  _textFieldFocusNode,
-                  _suggestionsFocusNode,
+                  suggestions,
+                  textController,
+                  textFieldFocusNode,
+                  suggestionsFocusNode,
                 ),
               );
             },
@@ -189,23 +202,24 @@ class _TextInput extends ConsumerState<TextInput> {
         ),
       ),
       child: CompositedTransformTarget(
-        link: _link,
+        link: link,
         child: Focus(
           onFocusChange: (hasFocus) {
             if (hasFocus) {
-              _priorIndex = 0;
+              priorIndex = 0;
             }
           },
-          onKeyEvent: _handleKeyEvent,
+          onKeyEvent: (FocusNode node, KeyEvent event) =>
+              handleKeyEvent(node, event, query: true),
           child: TextField(
-            focusNode: _textFieldFocusNode,
-            controller: _textController,
+            focusNode: textFieldFocusNode,
+            controller: textController,
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Ex: blue_sky cloud 1girl',
               suffix: IconButton(
                 icon: Icon(Icons.search),
-                onPressed: _sendQuery,
+                onPressed: sendInput,
               ),
             ),
           ),

@@ -26,12 +26,12 @@ class Suggestion {
 }
 
 class SuggestionList extends StatefulWidget {
-  final ValueNotifier<List<Suggestion>> _suggestions;
+  final ValueNotifier<List<Suggestion>> suggestions;
   final TextEditingController _textController;
   final FocusNode _textFieldFocusNode;
   final FocusNode _suggestionsFocusNode;
   const SuggestionList(
-    this._suggestions,
+    this.suggestions,
     this._textController,
     this._textFieldFocusNode,
     this._suggestionsFocusNode, {
@@ -61,7 +61,7 @@ class _SuggestionList extends State<SuggestionList> {
 
   void _returnFocus(int index) {
     widget._textController.text +=
-        '${widget._suggestions.value[index].remainder} ';
+        '${widget.suggestions.value[index].remainder} ';
     widget._textController.selection = TextSelection.collapsed(
       offset: widget._textController.text.length,
     );
@@ -92,7 +92,7 @@ class _SuggestionList extends State<SuggestionList> {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    final suggestions = widget._suggestions.value;
+    final suggestions = widget.suggestions.value;
     if (suggestions.isEmpty) return KeyEventResult.ignored;
 
     final key = event.logicalKey;
@@ -144,17 +144,17 @@ class _SuggestionList extends State<SuggestionList> {
     int index,
     ThemeData theme,
   ) {
-    final textColor = _getTextColor(widget._suggestions.value[index].category);
+    final textColor = _getTextColor(widget.suggestions.value[index].category);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: <Widget>[
         Text(
-          widget._suggestions.value[index].name,
+          widget.suggestions.value[index].name,
           style: TextStyle(fontSize: 15, color: textColor),
         ),
         Text(
-          formatNumber(widget._suggestions.value[index].freq),
+          formatNumber(widget.suggestions.value[index].freq),
           style: TextStyle(fontSize: 15, color: theme.colorScheme.outline),
         ),
       ],
@@ -165,7 +165,7 @@ class _SuggestionList extends State<SuggestionList> {
     return ListView.builder(
       itemExtent: 27.0,
       physics: const ClampingScrollPhysics(),
-      itemCount: widget._suggestions.value.length,
+      itemCount: widget.suggestions.value.length,
       itemBuilder: (context, index) {
         Color bgColor = theme.colorScheme.surface;
         if (index == _highlightIndex) {

@@ -25,6 +25,7 @@ enum Message {
   editdirectory,
   getconf,
   gettags,
+  sendtags,
   openresults,
   kill,
 }
