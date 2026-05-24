@@ -119,6 +119,8 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
 
     final preservedText = ref.watch(tagInputTextProvider);
 
+    var overPath = "";
+
     info.whenData((data) {
       if (data != null && data["path"] != "n/a") {
         final String incomingTags = data["tags"] ?? "";
@@ -217,6 +219,9 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
 
                 final String path = info["path"] ?? "";
                 final String lowerPath = path.toLowerCase();
+
+                overPath = lowerPath;
+
                 final bool isVideo =
                     lowerPath.endsWith('.mp4') ||
                     lowerPath.endsWith('.mov') ||
@@ -250,10 +255,20 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
         ],
       ),
 
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => {sendInput(Message.sendtags)},
-        tooltip: 'Save Changes',
-        child: const Icon(Icons.save),
+      floatingActionButton: Wrap(
+        spacing: 16,
+        children: [
+          FloatingActionButton(
+            onPressed: () => {conn.send(Message.openresults, overPath)},
+            tooltip: 'Show in Folder',
+            child: const Icon(Icons.folder_open),
+          ),
+          FloatingActionButton(
+            onPressed: () => {sendInput(Message.sendtags)},
+            tooltip: 'Save Changes',
+            child: const Icon(Icons.save),
+          ),
+        ],
       ),
     );
   }

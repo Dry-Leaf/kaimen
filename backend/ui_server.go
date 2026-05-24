@@ -9,8 +9,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -58,9 +60,53 @@ var (
 	connMu     sync.Mutex
 )
 
-func Open_search_result() {
-	err := browser.OpenFile("search/results")
-	Err_check(err)
+func Open_and_select(path string) error {
+	var cmd *exec.Cmd
+
+	switch runtime.GOOS {
+	case "windows":
+		winPath := filepath.Clean(path)
+		cmd = exec.Command("explorer.exe", "/select,", winPath)
+
+	case "darwin":
+		cmd = exec.Command("open", "-R", path)
+
+	case "linux":
+		dbusDest := "org.freedesktop.FileManager1"
+		dbusPath := "/org/freedesktop/FileManager1"
+		dbusFunc := "org.freedesktop.FileManager1.ShowItems"
+
+		fileURI := fmt.Sprintf("file://%s", path)
+		cmd = exec.Command("dbus-send", "--session",
+			"--dest="+dbusDest, dbusPath, dbusFunc,
+			"array:string:"+fileURI, "string:")
+
+	default:
+		return fmt.Errorf("unsupported platform: %s", runtime.GOOS)
+	}
+
+	if cmd == nil {
+		return fmt.Errorf("command was not initialized properly")
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	return cmd.Process.Release()
+}
+
+func Open_search_result(path string) {
+	if path == "" {
+		err := browser.OpenFile("search/results")
+		Err_check(err)
+	} else {
+		err := Open_and_select(path)
+		fmt.Println("ERROR")
+		fmt.Println(err)
+		Err_check(err)
+	}
 }
 
 func update(mode MessageType) {
@@ -178,7 +224,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case createsource, editsource, deletesource, reordersources, editignore, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)
 		case openresults:
-			Open_search_result()
+			value := req.Value.(string)
+			Open_search_result(value)
 		case kill:
 			onExit()
 		default:
