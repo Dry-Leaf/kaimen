@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -148,6 +149,10 @@ const (
 
 	gather_query = `SELECT tag FROM file_tags WHERE md5 = ?`
 
+	gather_artist = `SELECT tag FROM file_tags ft INNER JOIN tags t ON t.name = ft.tag WHERE md5 = ? AND t.category = 1`
+
+	gather_metadata = `SELECT property, CAST(numeric_value AS INTEGER) as numeric_value, text_value FROM metadata WHERE md5 = ?`
+
 	path_query = `SELECT file_path FROM files WHERE md5 = ?`
 )
 
@@ -165,22 +170,28 @@ func gather_tags(md5sum string) map[string]string {
 	Err_check(err)
 	defer conn.Close()
 
-	rows, err := conn.Query(gather_query, md5sum)
-	if err != sql.ErrNoRows {
-		Err_check(err)
+	gather_single_col := func(query, combiner string) string {
+		var arr []string
+
+		rows, err := conn.Query(query, md5sum)
+		if err != sql.ErrNoRows {
+			Err_check(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var cval string
+			err = rows.Scan(&cval)
+
+			arr = append(arr, cval)
+		}
+
+		vals := strings.Join(arr, combiner)
+		return vals
 	}
-	defer rows.Close()
 
-	var tag_arr []string
-
-	for rows.Next() {
-		var ctag string
-		err = rows.Scan(&ctag)
-
-		tag_arr = append(tag_arr, ctag)
-	}
-
-	tags := strings.Join(tag_arr, " ")
+	tags := gather_single_col(gather_query, " ")
+	artists := gather_single_col(gather_artist, ", ")
 
 	var path string
 
@@ -193,9 +204,56 @@ func gather_tags(md5sum string) map[string]string {
 		return map[string]string{"path": "n/a", "tags": tags}
 	}
 
+	var timestamp string
+	var filename string
+	var width int64
+	var height int64
+
+	rows, err := conn.Query(gather_metadata, md5sum)
+	if err != sql.ErrNoRows {
+		Err_check(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			property      string
+			numeric_value sql.NullInt64  // Wraps an int64 and a Valid bool
+			text_value    sql.NullString // Wraps a string and a Valid bool
+		)
+		err = rows.Scan(&property, &numeric_value, &text_value)
+		Err_check(err)
+
+		switch property {
+		case "timestamp":
+			if numeric_value.Valid {
+				unixTimeUTC := time.Unix(numeric_value.Int64, 0)
+				timestamp = unixTimeUTC.Format(time.RFC1123)
+			}
+		case "name":
+			if text_value.Valid {
+				filename = text_value.String
+			}
+		case "width":
+			if numeric_value.Valid {
+				width = numeric_value.Int64
+			}
+		case "height":
+			if numeric_value.Valid {
+				height = numeric_value.Int64
+			}
+		}
+	}
+
+	dimensions := fmt.Sprintf("%d x %d", width, height)
+
 	prev_md5sum = md5sum
 
-	return map[string]string{"path": path, "tags": tags}
+	fmt.Println(map[string]string{"path": path, "tags": tags,
+		"artists": artists, "timestamp": timestamp, "filename": filename, "dimension": dimensions})
+
+	return map[string]string{"path": path, "tags": tags,
+		"artists": artists, "timestamp": timestamp, "filename": filename, "dimension": dimensions}
 }
 
 func ignore_check(md5sum string) int {

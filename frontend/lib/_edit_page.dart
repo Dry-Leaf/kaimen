@@ -139,29 +139,72 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
     );
   }
 
+  Table getInfoTable(dynamic infoData) {
+    final Map<dynamic, dynamic> info = infoData is Map ? infoData : {};
+
+    final Map<String, String> displayFields = {
+      "Artist(s):": info["artists"]?.toString() ?? "",
+      "Timestamp:": info["timestamp"]?.toString() ?? "",
+      "Filename:": info["filename"]?.toString() ?? "",
+      "Dimensions:": info["dimension"]?.toString() ?? "",
+    };
+
+    final List<TableRow> tableRows = [];
+    displayFields.forEach((label, value) {
+      if (value.isNotEmpty) {
+        tableRows.add(
+          TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, right: 16.0),
+                child: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: SelectableText(value),
+              ),
+            ],
+          ),
+        );
+      }
+    });
+
+    return Table(
+      columnWidths: const {0: IntrinsicColumnWidth(), 1: FlexColumnWidth()},
+      children: tableRows,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<dynamic> info = ref.watch(
-      messageByTypeProvider(Message.gettags),
-    );
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    final preservedText = ref.watch(tagInputTextProvider);
+    ref.listen<AsyncValue<dynamic>>(messageByTypeProvider(Message.gettags), (
+      previous,
+      next,
+    ) {
+      next.whenData((data) {
+        if (data != null && data["path"] != "n/a") {
+          final String incomingTags = data["tags"] ?? "";
+          final preservedText = ref.read(tagInputTextProvider);
 
-    var overPath = "";
-
-    info.whenData((data) {
-      if (data != null && data["path"] != "n/a") {
-        final String incomingTags = data["tags"] ?? "";
-
-        if (textController.text.isEmpty) {
           if (preservedText.isNotEmpty) {
             textController.text = preservedText;
           } else {
             textController.text = incomingTags;
           }
         }
-      }
+      });
     });
+
+    final AsyncValue<dynamic> info = ref.watch(
+      messageByTypeProvider(Message.gettags),
+    );
+
+    var overPath = "";
 
     final autosuggestMessage = ref.watch(
       messageByTypeProvider(Message.autosuggest),
@@ -295,6 +338,38 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
         spacing: 16,
         children: [
           FloatingActionButton(
+            foregroundColor: colorScheme.onSecondaryContainer,
+            backgroundColor: colorScheme.surface,
+            onPressed: () {
+              final rawData = info.value;
+
+              if (rawData == null || rawData["path"] == "n/a") {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No file data available to display.'),
+                  ),
+                );
+                return;
+              }
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  content: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 400,
+                      maxWidth: 700,
+                    ),
+                    child: getInfoTable(rawData),
+                  ),
+                ),
+              );
+            },
+            tooltip: 'File Info',
+            child: const Icon(Icons.info_outline),
+          ),
+          FloatingActionButton(
+            foregroundColor: colorScheme.onSecondaryContainer,
+            backgroundColor: colorScheme.surface,
             onPressed: () => {conn.send(Message.openresults, overPath)},
             tooltip: 'Show in Folder',
             child: const Icon(Icons.folder_open),
