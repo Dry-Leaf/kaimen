@@ -3,6 +3,7 @@
 
 ### Manual tag editing
 <img width="984" height="742" alt="tag_edit_demo" src="https://github.com/user-attachments/assets/a85b30e5-12d5-40d1-a1f5-3868180f4ee8" />
+
 # Installation
 
 ### Windows
