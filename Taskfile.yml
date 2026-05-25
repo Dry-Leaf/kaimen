@@ -1,0 +1,24 @@
+version: "3"
+
+tasks:
+  build-backend:
+    dir: backend
+    preconditions:
+      - test -f go.mod
+    env:
+      CGO_CFLAGS: -IC:\PROGRA~2\WinFsp\inc\fuse
+    cmds:
+      - go build -ldflags="-s -w" -o kaimen.exe
+      - cp kaimen.exe ../releases/Kaimen/kaimen.exe
+  build-frontend:
+    dir: frontend
+    preconditions:
+      - test -f pubspec.yaml
+    cmds:
+      - flutter build windows --release
+      - cp -r build/windows/x64/runner/Release/. ../releases/Kaimen/
+  build:
+    desc: Build both backend and frontend
+    cmds:
+      - task: build-backend
+      - task: build-frontend
