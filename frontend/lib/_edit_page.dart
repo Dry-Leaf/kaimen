@@ -41,6 +41,8 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
     hashController = TextEditingController();
 
     initSuggestions(3);
+    final initialText = ref.read(tagInputTextProvider);
+    textController.text = initialText;
 
     textController.addListener(() {
       ref.read(tagInputTextProvider.notifier).update(textController.text);
