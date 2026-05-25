@@ -133,6 +133,7 @@ func (self *KAIMEN_FS) Readdir(path string,
 }
 
 func mount() {
+	os.RemoveAll("search")
 	hellofs := &KAIMEN_FS{}
 	host := fuse.NewFileSystemHost(hellofs)
 	host.Mount("search", os.Args[1:])

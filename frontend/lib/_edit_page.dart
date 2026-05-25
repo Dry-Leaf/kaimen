@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'dart:collection';
+
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
-import 'dart:io';
 
 import '_backend_conn.dart' show Message, messageByTypeProvider;
 
@@ -29,6 +32,8 @@ class TagEditPage extends ConsumerStatefulWidget {
 
 class _TagEditPageState extends ConsumerState with WithSuggestions {
   late final TextEditingController hashController;
+  final priorHash = Queue<String>();
+  int priorHashIndex = 0;
 
   @override
   void initState() {
@@ -50,11 +55,34 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
 
   void _onHashSubmitted(String value) {
     if (value.isNotEmpty) {
+      priorHash.addFirst(hashController.text);
+      if (priorHash.length > 5) {
+        priorHash.removeLast();
+      }
+
       ref.read(tagInputTextProvider.notifier).update("");
       textController.clear();
       hashController.clear();
       conn.send(Message.gettags, value);
     }
+  }
+
+  KeyEventResult handleHashKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowUp &&
+          priorHash.isNotEmpty) {
+        hashController.text = priorHash.elementAt(priorHashIndex);
+        priorHashIndex += 1;
+        if (priorHashIndex > priorHash.length - 1) {
+          priorHashIndex = 0;
+        }
+        hashController.selection = TextSelection.collapsed(
+          offset: hashController.text.length,
+        );
+        return KeyEventResult.handled;
+      }
+    }
+    return KeyEventResult.ignored;
   }
 
   Widget createTextBox(dynamic info) {
@@ -192,15 +220,23 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
             padding: const EdgeInsets.only(left: 32.0, bottom: 40.0),
             child: SizedBox(
               width: 370,
-              child: TextField(
-                maxLength: 32,
-                controller: hashController,
-                onSubmitted: _onHashSubmitted,
-                decoration: InputDecoration(
-                  hintText: "e.g. 5a8420afd7ea4b3e4bbf4186c02570ee",
-                  suffixIcon: IconButton(
-                    onPressed: () => _onHashSubmitted(hashController.text),
-                    icon: const Icon(Icons.tag),
+              child: Focus(
+                onFocusChange: (hasFocus) {
+                  if (hasFocus) {
+                    priorHashIndex = 0;
+                  }
+                },
+                onKeyEvent: handleHashKeyEvent,
+                child: TextField(
+                  maxLength: 32,
+                  controller: hashController,
+                  onSubmitted: _onHashSubmitted,
+                  decoration: InputDecoration(
+                    hintText: "e.g. 5a8420afd7ea4b3e4bbf4186c02570ee",
+                    suffixIcon: IconButton(
+                      onPressed: () => _onHashSubmitted(hashController.text),
+                      icon: const Icon(Icons.tag),
+                    ),
                   ),
                 ),
               ),
