@@ -64,6 +64,7 @@ func dequeue() {
 				go func(p string) {
 					process(p, mtype.Extension(), info)
 					pending_create.Delete(p)
+					pending_infer.Store(p)
 					update(counter)
 				}(path)
 			}
@@ -111,7 +112,6 @@ func dir_watch(dir string) {
 		switch ei.Event() {
 		case notify.Create:
 			pending_create.Store(ei.Path())
-			pending_infer.Store(ei.Path())
 			update(counter)
 		case notify.Remove:
 			pending_remove.Store(ei.Path())

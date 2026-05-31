@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"math"
 	"os"
+	"time"
 
 	"github.com/disintegration/imaging"
 	ort "github.com/yalue/onnxruntime_go"
@@ -145,7 +146,7 @@ func infer_tags_closure() func(string) []string {
 	inputNames := []string{"input"}
 	outputNames := []string{"initial_predictions", "refined_predictions", "selected_candidates"}
 
-	session, err := ort.NewDynamicAdvancedSession(`.\camie-tagger-v2.onnx`,
+	session, err := ort.NewDynamicAdvancedSession(`.\camie-tagger-v2_quantized.onnx`,
 		inputNames, outputNames, nil)
 	Err_check(err)
 
@@ -203,3 +204,27 @@ func infer_tags_closure() func(string) []string {
 }
 
 var infer_tags = infer_tags_closure()
+
+func dequeue_inference() {
+	interval := time.Minute
+	for range time.Tick(interval) {
+		pending_infer.Range(func(key, _ any) bool {
+			path := key.(string)
+
+			_, err := os.Stat(path)
+			if err != nil {
+				pending_infer.Delete(path)
+				return true
+			}
+
+			go func(p string) {
+				results := infer_tags(p)
+				fmt.Println("INFERRED")
+				fmt.Println(results)
+				pending_infer.Delete(p)
+			}(path)
+
+			return true
+		})
+	}
+}

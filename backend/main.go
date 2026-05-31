@@ -54,6 +54,7 @@ func main() {
 	initial_crawl()
 
 	go dequeue()
+	go dequeue_inference()
 	go server()
 	go open_front()
 
