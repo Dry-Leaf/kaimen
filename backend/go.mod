@@ -8,6 +8,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/at-wat/ebml-go v0.18.0
 	github.com/coder/websocket v1.8.14
+	github.com/disintegration/imaging v1.6.2
 	github.com/evanoberholster/imagemeta v1.0.0
 	github.com/gabriel-vasile/mimetype v1.4.10
 	github.com/kpfaulkner/jxl-go v0.0.0-20260402212822-28912ada73e7
@@ -17,6 +18,7 @@ require (
 	github.com/rjeczalik/notify v0.9.3
 	github.com/vegidio/avif-go v0.0.0-20260318201954-49ee16a82be7
 	github.com/winfsp/cgofuse v1.6.0
+	github.com/yalue/onnxruntime_go v1.30.1
 	golang.org/x/image v0.39.0
 )
 

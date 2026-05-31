@@ -38,6 +38,7 @@ func (s *SafeMap) IsEmpty() bool {
 
 var pending_create SafeMap
 var pending_remove SafeMap
+var pending_infer SafeMap
 var watch_kill sync.Map
 
 func dequeue() {
@@ -110,6 +111,7 @@ func dir_watch(dir string) {
 		switch ei.Event() {
 		case notify.Create:
 			pending_create.Store(ei.Path())
+			pending_infer.Store(ei.Path())
 			update(counter)
 		case notify.Remove:
 			pending_remove.Store(ei.Path())
