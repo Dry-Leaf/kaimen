@@ -30,11 +30,13 @@ class SuggestionList extends StatefulWidget {
   final TextEditingController _textController;
   final FocusNode _textFieldFocusNode;
   final FocusNode _suggestionsFocusNode;
+  final bool multi;
   const SuggestionList(
     this.suggestions,
     this._textController,
     this._textFieldFocusNode,
     this._suggestionsFocusNode, {
+    this.multi = true,
     super.key,
   });
 
@@ -60,8 +62,10 @@ class _SuggestionList extends State<SuggestionList> {
   }
 
   void _returnFocus(int index) {
-    widget._textController.text +=
-        '${widget.suggestions.value[index].remainder} ';
+    widget._textController.text += widget.suggestions.value[index].remainder;
+    if (widget.multi) {
+      widget._textController.text += ' ';
+    }
     widget._textController.selection = TextSelection.collapsed(
       offset: widget._textController.text.length,
     );

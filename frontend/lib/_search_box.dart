@@ -91,7 +91,7 @@ mixin WithSuggestions on ConsumerState {
       if (textFieldFocusNode.hasFocus) {
         if (event.logicalKey == LogicalKeyboardKey.tab &&
             suggestions.value.isNotEmpty) {
-          textController.text += '${suggestions.value[0].remainder} ';
+          textController.text += suggestions.value[0].remainder;
           textController.selection = TextSelection.collapsed(
             offset: textController.text.length,
           );

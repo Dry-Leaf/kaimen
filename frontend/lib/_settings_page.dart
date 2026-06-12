@@ -7,6 +7,7 @@ import '_backend_conn.dart' show Conn, Message, connProvider;
 import '_directory_tab.dart' show DirectoryTab;
 import '_misc_tab.dart' show MiscTab;
 import '_source_tab.dart' show SourcesTab;
+import '_tags_tab.dart' show TagsTab;
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -40,6 +41,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             tabs: [
               Tab(text: "Directories"),
               Tab(text: "Sources"),
+              Tab(text: "Tags"),
               Tab(text: "Misc"),
             ],
           ),
@@ -67,7 +69,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
           ],
         ),
-        body: TabBarView(children: [DirectoryTab(), SourcesTab(), MiscTab()]),
+        body: TabBarView(
+          children: [DirectoryTab(), SourcesTab(), TagsTab(), MiscTab()],
+        ),
       ),
     );
   }
