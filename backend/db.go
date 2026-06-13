@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"database/sql"
 	"fmt"
+	"html"
 	"io"
 	"os"
 	"regexp"
@@ -446,7 +447,7 @@ func tag_query_build(q_string string) string {
 
 		for i, tag := range tags {
 			tag = strings.ToLower(tag)
-			if len(tag) > 1 {
+			if len(tag) > 0 {
 				var cq string
 				if ctag, found := strings.CutPrefix(tag, "-"); found {
 					cq = fmt.Sprintf(query_exclude, i, ctag)
@@ -487,6 +488,8 @@ func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
 	Err_check(err)
 
 	for _, tag := range tags {
+		tag := strings.ReplaceAll(html.UnescapeString(tag), `\/`, `/`)
+
 		row := new_tag_stmt.QueryRow(tag)
 
 		var freq int

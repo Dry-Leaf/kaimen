@@ -41,6 +41,8 @@ const (
 	newdirectory
 	deletedirectory
 	editdirectory
+	edittag
+	deletetag
 	getconf
 	gettags
 	sendtags
@@ -48,7 +50,7 @@ const (
 	kill
 )
 
-var last_word_reg = regexp.MustCompile(`\b[\w-]+$`)
+var last_word_reg = regexp.MustCompile(`(?:\s|\b|^)[\S]+$`)
 
 type message struct {
 	Type  MessageType `json:"Type"`
@@ -126,7 +128,6 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
-		//fmt.Println("sending counter")
 		file_count := strconv.Itoa(get_count())
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
@@ -185,7 +186,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case autosuggest:
-			lw := strings.TrimLeft(last_word_reg.FindString(req.Value.([]interface{})[0].(string)), "-")
+			lw := strings.Trim(last_word_reg.FindString(req.Value.([]interface{})[0].(string)), "- ")
+
+			fmt.Println("LAST WORD")
+			fmt.Println(lw)
 
 			var results []tag
 			if lw != "" {

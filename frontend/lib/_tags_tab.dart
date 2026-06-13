@@ -15,32 +15,32 @@ const Map<int, String> catMap = {
   5: 'Meta',
 };
 
-class SelectedCategory extends Notifier<String> {
+class SelectedCategory extends Notifier<int> {
   @override
-  String build() {
+  int build() {
     final autosuggestMessage = ref.watch(
       messageByTypeProvider(Message.autosuggest),
     );
 
     return autosuggestMessage.maybeWhen(
       data: (msg) {
-        if (msg == null) return "General";
+        if (msg == null) return 0;
         final parsed = (msg as List)
             .map((e) => Suggestion.fromJson(e))
             .toList();
-        if (parsed.isEmpty) return "General";
-        return catMap[parsed[0].category] ?? "General";
+        if (parsed.isEmpty) return 0;
+        return parsed[0].category;
       },
-      orElse: () => "General",
+      orElse: () => 0,
     );
   }
 
-  void update(String newValue) {
+  void update(int newValue) {
     state = newValue;
   }
 }
 
-final selectedCategoryProvider = NotifierProvider<SelectedCategory, String>(
+final selectedCategoryProvider = NotifierProvider<SelectedCategory, int>(
   SelectedCategory.new,
 );
 
@@ -51,16 +51,19 @@ class TagCatMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dropdownValue = ref.watch(selectedCategoryProvider);
 
-    return DropdownButton<String>(
+    return DropdownButton<int>(
       value: dropdownValue,
       icon: const Icon(Icons.arrow_downward),
-      onChanged: (String? value) {
+      onChanged: (int? value) {
         if (value != null) {
           ref.read(selectedCategoryProvider.notifier).update(value);
         }
       },
-      items: catMap.values.map<DropdownMenuItem<String>>((var value) {
-        return DropdownMenuItem<String>(value: value, child: Text(value));
+      items: catMap.entries.map<DropdownMenuItem<int>>((entry) {
+        return DropdownMenuItem<int>(
+          value: entry.key,
+          child: Text(entry.value),
+        );
       }).toList(),
     );
   }
@@ -85,12 +88,9 @@ class TagsTab extends ConsumerStatefulWidget {
 }
 
 class _TagsTabState extends ConsumerState with WithSuggestions {
-  late final TextEditingController tagController;
-
   @override
   void initState() {
     super.initState();
-    tagController = TextEditingController();
 
     initSuggestions(7);
     final initialText = ref.read(tagInputTextProvider);
@@ -204,12 +204,20 @@ class _TagsTabState extends ConsumerState with WithSuggestions {
           FloatingActionButton(
             foregroundColor: colorScheme.onTertiaryContainer,
             backgroundColor: colorScheme.surface,
-            onPressed: () {},
+            onPressed: () {
+              conn.send(Message.deletetag, textController.text);
+            },
             tooltip: 'Delete Tag',
             child: const Icon(Icons.delete),
           ),
           FloatingActionButton(
-            onPressed: () {},
+            onPressed: () {
+              final currentCategory = ref.read(selectedCategoryProvider);
+              conn.send(Message.edittag, [
+                textController.text,
+                currentCategory,
+              ]);
+            },
             tooltip: 'Save Tag',
             child: const Icon(Icons.save),
           ),

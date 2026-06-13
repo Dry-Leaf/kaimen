@@ -23,6 +23,8 @@ enum Message {
   newdirectory,
   deletedirectory,
   editdirectory,
+  edittag,
+  deletetag,
   getconf,
   gettags,
   sendtags,
