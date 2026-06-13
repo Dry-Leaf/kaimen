@@ -26,12 +26,12 @@ mixin WithSuggestions on ConsumerState {
     super.dispose();
   }
 
-  void initSuggestions([int suggLimit = 10]) {
+  void initSuggestions([int suggLimit = 10, int minsugg = 1]) {
     suggestions = ValueNotifier<List<Suggestion>>([]);
 
     conn = ref.read(connProvider).requireValue;
 
-    textController.addListener(() => autoSuggestReq(suggLimit));
+    textController.addListener(() => autoSuggestReq(suggLimit, minsugg));
     textFieldFocusNode.addListener(updateVisibilityChange);
     textFieldFocusNode.addListener(handleFocusAndCaret);
     suggestions.addListener(updateVisibilityChange);
@@ -39,7 +39,7 @@ mixin WithSuggestions on ConsumerState {
     suggestionsFocusNode.addListener(updateVisibilityChange);
   }
 
-  void autoSuggestReq(int suggLimit) {
+  void autoSuggestReq(int suggLimit, int minsugg) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (textController.text.isNotEmpty) {
         if (textController.text == priorText) {
@@ -48,7 +48,11 @@ mixin WithSuggestions on ConsumerState {
         setState(() {
           priorText = textController.text;
         });
-        conn.send(Message.autosuggest, [textController.text, suggLimit]);
+        conn.send(Message.autosuggest, [
+          textController.text,
+          minsugg,
+          suggLimit,
+        ]);
       }
     });
   }

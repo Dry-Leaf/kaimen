@@ -92,7 +92,7 @@ class _TagsTabState extends ConsumerState with WithSuggestions {
   void initState() {
     super.initState();
 
-    initSuggestions(7);
+    initSuggestions(7, 0);
     final initialText = ref.read(tagInputTextProvider);
     textController.text = initialText;
 

@@ -193,7 +193,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			var results []tag
 			if lw != "" {
-				results = get_suggestions(lw, req.Value.([]interface{})[1].(float64))
+				results = get_suggestions(lw, req.Value.([]interface{})[1].(float64), req.Value.([]interface{})[2].(float64))
 			}
 			resp := message{Type: autosuggest, Value: results}
 
@@ -230,6 +230,24 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case openresults:
 			value := req.Value.(string)
 			Open_search_result(value)
+		case edittag:
+			Edit_tag(req.Value.([]interface{})[0].(string), req.Value.([]interface{})[1].(float64))
+
+			var results []tag
+			results = get_suggestions(prev_autosugg, float64(0), float64(7))
+			resp := message{Type: autosuggest, Value: results}
+
+			err := wsjson.Write(ctx, c, resp)
+			Err_check(err)
+		case deletetag:
+			Delete_tag(req.Value.(string))
+
+			var results []tag
+			results = get_suggestions(prev_autosugg, float64(0), float64(7))
+			resp := message{Type: autosuggest, Value: results}
+
+			err := wsjson.Write(ctx, c, resp)
+			Err_check(err)
 		case kill:
 			onExit()
 		default:

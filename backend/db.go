@@ -20,6 +20,7 @@ var (
 	db_uri         string
 	db_path        string
 	prev_md5sum    string
+	prev_autosugg  string
 	insert_counter = 0
 )
 
@@ -37,6 +38,7 @@ const (
 		ignore INTEGER NOT NULL,
 	);`
 	// name, type, width, height, size(in bytes), mod time OR XMP Create Date, duration of videos(in seconds)
+	// perception hash
 	metadata_table = `CREATE TABLE IF NOT EXISTS metadata (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		property TEXT NOT NULL,
@@ -51,7 +53,7 @@ const (
 	);`
 	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
-		tag TEXT REFERENCES tags(name)  ON DELETE CASCADE,
+		tag TEXT REFERENCES tags(name) ON DELETE CASCADE,
 		inferred INTEGER,
 		PRIMARY KEY (md5,tag)
 	);`
@@ -64,6 +66,12 @@ const (
 	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
 		ON CONFLICT(name)
 		DO UPDATE SET freq = freq + 1 RETURNING freq, category;`
+
+	edit_tag = `INSERT INTO tags(name, freq, category) VALUES(?1, 0, ?2)
+		ON CONFLICT(name)
+		DO UPDATE SET category = ?2;`
+
+	delete_tag = `DELETE FROM tags WHERE name = ?;`
 
 	tag_decrement = `CREATE TRIGGER tag_decrement
 		AFTER DELETE ON file_tags
@@ -104,7 +112,7 @@ const (
 
 	file_count = `SELECT COUNT(*) FROM files WHERE ignore = FALSE;`
 
-	tag_query = `SELECT * FROM tags WHERE name LIKE ? || '%' AND freq > 0 ORDER BY freq DESC LIMIT ?;`
+	tag_query = `SELECT * FROM tags WHERE name LIKE ?1 || '%' AND freq >= ?2 ORDER BY (name = ?1) DESC, freq DESC LIMIT ?3;`
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
@@ -335,12 +343,14 @@ type tag struct {
 	Remainder string `json:"Remainder"`
 }
 
-func get_suggestions(query string, limit float64) []tag {
+func get_suggestions(query string, min, limit float64) []tag {
+	prev_autosugg = query
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
 
-	rows, err := conn.Query(tag_query, query, limit)
+	rows, err := conn.Query(tag_query, query, min, limit)
 	Err_check(err)
 	defer rows.Close()
 
@@ -475,6 +485,41 @@ func tag_query_build(q_string string) string {
 		}
 	}
 	return fquery + query_tail
+}
+
+func Edit_tag(name string, category float64) {
+	fmt.Println("haaaa")
+	fmt.Println(name)
+	fmt.Println(category)
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	edit_tag_stmt, err := tx.Prepare(edit_tag)
+	Err_check(err)
+
+	edit_tag_stmt.Exec(name, category)
+
+	tx.Commit()
+}
+
+func Delete_tag(name string) {
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	delete_tag_stmt, err := tx.Prepare(delete_tag)
+	Err_check(err)
+
+	delete_tag_stmt.Exec(name)
+
+	tx.Commit()
 }
 
 func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
