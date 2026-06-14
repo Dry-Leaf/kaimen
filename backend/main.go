@@ -53,6 +53,7 @@ func main() {
 	indexing = make(map[string]bool)
 	initial_crawl()
 
+	go inference_worker()
 	go dequeue()
 	go dequeue_inference()
 	go server()

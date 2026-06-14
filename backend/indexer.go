@@ -101,11 +101,11 @@ func index(path string, d fs.DirEntry, err error) error {
 	return nil
 }
 
-func process(path, ext string, info os.FileInfo) {
+func process(path, ext string, info os.FileInfo) string {
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return
+			return ""
 		} else {
 			Err_check(err)
 		}
@@ -151,13 +151,13 @@ func process(path, ext string, info os.FileInfo) {
 	if Ignore_enabled {
 		if prev_ignored {
 			//fmt.Println("ignoring: " + md5sum)
-			return
+			return ""
 		}
 	}
 	// check db if file already there
 	result := dup_check(md5sum, path)
 	if result > 0 {
-		return
+		return ""
 	}
 
 	//fmt.Printf("process: %s, md5: %s \n", path, md5sum)
@@ -176,10 +176,12 @@ func process(path, ext string, info os.FileInfo) {
 		//fmt.Printf("tags got for %s \n", path)
 		to_ignore = false
 	}
-	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored)
+	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored, false)
 
 	meta := get_meta(path, ext, info, complete_meta, found_meta)
 	insert_metadata(md5sum, meta)
+
+	return md5sum
 
 	//fmt.Printf("%s finished \n", path)
 }

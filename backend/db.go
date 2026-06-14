@@ -63,15 +63,27 @@ const (
 
 	new_image = `INSERT INTO files(md5,extension,file_path,ignore) VALUES(?,?,?,?);`
 
-	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 1, 0)
+	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 0, 0)
 		ON CONFLICT(name)
-		DO UPDATE SET freq = freq + 1 RETURNING freq, category;`
+		DO UPDATE SET name = EXCLUDED.name
+	 	RETURNING freq, category;`
+
+	new_relation = `INSERT INTO file_tags(md5, tag, inferred) VALUES(?,?,?)
+			ON CONFLICT(md5, tag) DO NOTHING;`
 
 	edit_tag = `INSERT INTO tags(name, freq, category) VALUES(?1, 0, ?2)
 		ON CONFLICT(name)
 		DO UPDATE SET category = ?2;`
 
 	delete_tag = `DELETE FROM tags WHERE name = ?;`
+
+	tag_increment = `CREATE TRIGGER tag_increment
+		AFTER INSERT ON file_tags
+		BEGIN
+			UPDATE tags
+			SET freq = freq + 1
+			WHERE name = NEW.tag;
+		END;`
 
 	tag_decrement = `CREATE TRIGGER tag_decrement
 		AFTER DELETE ON file_tags
@@ -80,9 +92,6 @@ const (
 			SET freq = freq - 1
 			WHERE name = OLD.tag;
 		END;`
-
-	new_relation = `INSERT INTO file_tags(md5, tag) VALUES(?,?)
-		ON CONFLICT(md5, tag) DO NOTHING;`
 
 	ignore_exists = `SELECT COUNT(md5) FROM files WHERE md5 = ? AND ignore = TRUE;`
 
@@ -112,7 +121,13 @@ const (
 
 	file_count = `SELECT COUNT(*) FROM files WHERE ignore = FALSE;`
 
-	tag_query = `SELECT * FROM tags WHERE name LIKE ?1 || '%' AND freq >= ?2 ORDER BY (name = ?1) DESC, freq DESC LIMIT ?3;`
+	tag_query = `SELECT * FROM tags WHERE name LIKE ?1 || '%' AND freq >= ?2
+		ORDER BY (name = ?1) DESC, freq DESC LIMIT ?3;`
+
+	bg_query = `SELECT COUNT(*) FROM file_tags ft WHERE ft.md5 = ? AND ft.tag LIKE '%background'`
+
+	artist_query = `SELECT COUNT(*) FROM file_tags ft JOIN tags t on ft.tag = t.name
+		WHERE ft.md5 = ? AND t.category = '1'`
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
@@ -324,14 +339,14 @@ func delete_file(path string) {
 	update(counter)
 }
 
-func get_count() int {
+func get_count(query string, params ...any) int {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
 
 	var result int
 
-	conn.QueryRow(file_count).Scan(&result)
+	conn.QueryRow(query, params...).Scan(&result)
 
 	return result
 }
@@ -522,7 +537,7 @@ func Delete_tag(name string) {
 	tx.Commit()
 }
 
-func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
+func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 	new_relation_stmt, err := tx.Prepare(new_relation)
 	Err_check(err)
 
@@ -542,7 +557,7 @@ func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
 		err := row.Scan(&freq, &category)
 		Err_check(err)
 
-		if freq == 1 {
+		if freq == 0 {
 			if category == 0 {
 				//fmt.Printf("new tag %s\n", tag)
 				cat := get_tag_cat(tag)
@@ -554,7 +569,7 @@ func tag_iterate(md5sum string, tags []string, tx *sql.Tx) {
 				update_tag_stmt.Exec(0, tag)
 			}
 		}
-		new_relation_stmt.Exec(md5sum, tag)
+		new_relation_stmt.Exec(md5sum, tag, inferred)
 	}
 }
 
@@ -572,7 +587,7 @@ func overwrite_tags(t_string string) {
 
 	tags := strings.Split(t_string, " ")
 
-	tag_iterate(prev_md5sum, tags, tx)
+	tag_iterate(prev_md5sum, tags, false, tx)
 
 	tx.Commit()
 }
@@ -688,7 +703,7 @@ func insert_metadata(md5sum string, meta_data map[string]any) {
 	tx.Commit()
 }
 
-func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignored bool) {
+func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignored, inferred bool) {
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -705,7 +720,7 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 		return
 	}
 
-	tag_iterate(md5sum, tags, tx)
+	tag_iterate(md5sum, tags, inferred, tx)
 
 	insert_counter += 1
 

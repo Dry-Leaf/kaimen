@@ -128,7 +128,7 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
-		file_count := strconv.Itoa(get_count())
+		file_count := strconv.Itoa(get_count(file_count))
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
@@ -176,7 +176,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 		switch req.Type {
 		case counter:
-			file_count := strconv.Itoa(get_count())
+			file_count := strconv.Itoa(get_count(file_count))
 			//fmt.Println(file_count)
 			indexMu.Lock()
 			keys := slices.Sorted(maps.Keys(indexing))

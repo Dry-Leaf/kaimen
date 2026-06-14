@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"math"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -118,7 +119,7 @@ func preprocess_image(imagePath string, imageSize int) ([]float32, error) {
 	return tensorData, nil
 }
 
-func infer_tags_closure() func(string) []string {
+func infer_tags_closure() func(string, string) []string {
 	dat, err := os.ReadFile("camie-tagger-v2-metadata.json")
 	Err_check(err)
 
@@ -150,7 +151,7 @@ func infer_tags_closure() func(string) []string {
 		inputNames, outputNames, nil)
 	Err_check(err)
 
-	return func(path string) []string {
+	return func(md5sum, path string) []string {
 		imgFlatSlice, err := preprocess_image(path, img_size)
 		Err_check(err)
 
@@ -182,6 +183,9 @@ func infer_tags_closure() func(string) []string {
 
 		refined_logits := refinedTensor.GetData()
 
+		var character_hold []string
+		var copyright_hold []string
+
 		for idx, logit := range refined_logits {
 			prob := float32(1.0 / (1.0 + math.Exp(float64(-logit))))
 
@@ -192,10 +196,47 @@ func infer_tags_closure() func(string) []string {
 				switch tag_cat {
 				case "rating", "year", "meta":
 					continue
+				case "artist":
+					//check if artist already applied
+					artist_count := get_count(artist_query, md5sum)
+					if artist_count == 0 {
+						results = append(results, tag_name)
+					} else {
+						fmt.Println("dropped artist")
+						fmt.Println(tag_name)
+					}
+				case "character":
+					character_hold = append(character_hold, tag_name)
+				case "copyright":
+					copyright_hold = append(copyright_hold, tag_name)
+					results = append(results, tag_name)
+				case "general":
+					//check for other backgrounds if tag_name includes background
+					if strings.Contains(tag_name, "background") {
+						bg_count := get_count(bg_query, md5sum)
+						if bg_count != 0 {
+							fmt.Println("dropped bg")
+							fmt.Println(tag_name)
+							continue
+						}
+					}
+					results = append(results, tag_name)
 				default:
 					results = append(results, tag_name)
 				}
-				fmt.Println(metadata.DatasetInfo.TagMapping.TagToCAT[idx])
+			}
+		}
+		// only include characters with a corresponding copyright
+		for _, character := range character_hold {
+			if !strings.Contains(character, "(") {
+				results = append(results, character)
+				break
+			}
+			for _, copyright := range copyright_hold {
+				if strings.Contains(character, copyright) {
+					results = append(results, character)
+					break
+				}
 			}
 		}
 
@@ -205,25 +246,37 @@ func infer_tags_closure() func(string) []string {
 
 var infer_tags = infer_tags_closure()
 
+var inferQueue = make(chan [3]string, 100)
+
+func inference_worker() {
+	go func() {
+		for triplet := range inferQueue {
+			md5sum, path, ext := triplet[0], triplet[1], triplet[2]
+			if _, err := os.Stat(path); err != nil {
+				pending_infer.Delete(triplet)
+				continue
+			}
+
+			results := infer_tags(md5sum, path)
+			fmt.Println("INFERRED:", path)
+			fmt.Println(results)
+			insert_tags(md5sum, path, ext, results, false, false, true)
+
+			pending_infer.Delete(triplet)
+		}
+	}()
+}
+
 func dequeue_inference() {
 	interval := time.Minute
 	for range time.Tick(interval) {
 		pending_infer.Range(func(key, _ any) bool {
-			path := key.(string)
-
-			_, err := os.Stat(path)
-			if err != nil {
-				pending_infer.Delete(path)
-				return true
+			path := key.([3]string)
+			select {
+			case inferQueue <- path:
+			default:
+				fmt.Println("Inference queue is full!")
 			}
-
-			go func(p string) {
-				results := infer_tags(p)
-				fmt.Println("INFERRED")
-				fmt.Println(results)
-				pending_infer.Delete(p)
-			}(path)
-
 			return true
 		})
 	}

@@ -62,9 +62,9 @@ func dequeue() {
 			if now.Sub(info.ModTime()) >= interval {
 				//fmt.Println("About to process", path)
 				go func(p string) {
-					process(p, mtype.Extension(), info)
+					md5sum := process(p, mtype.Extension(), info)
 					pending_create.Delete(p)
-					pending_infer.Store(p)
+					pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
 					update(counter)
 				}(path)
 			}
