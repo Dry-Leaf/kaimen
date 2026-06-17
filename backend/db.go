@@ -682,7 +682,7 @@ func insert_metadata(md5sum string, meta_data map[string]any) {
 	for property, value := range meta_data {
 		var numeric bool
 		switch property {
-		case "name", "type":
+		case "name", "type", "phash":
 			numeric = false
 		case "duration":
 			numeric = true

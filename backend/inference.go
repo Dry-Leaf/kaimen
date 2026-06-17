@@ -189,7 +189,7 @@ func infer_tags_closure() func(string, string) []string {
 		for idx, logit := range refined_logits {
 			prob := float32(1.0 / (1.0 + math.Exp(float64(-logit))))
 
-			if prob >= .65 {
+			if prob >= .80 {
 				tag_cat := metadata.DatasetInfo.TagMapping.TagToCAT[idx]
 				tag_name := metadata.DatasetInfo.TagMapping.TagToIDX[idx]
 

@@ -8,6 +8,7 @@ require (
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/at-wat/ebml-go v0.18.0
 	github.com/coder/websocket v1.8.14
+	github.com/corona10/goimagehash v1.1.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/evanoberholster/imagemeta v1.0.0
 	github.com/gabriel-vasile/mimetype v1.4.10
@@ -24,6 +25,7 @@ require (
 
 require (
 	github.com/google/uuid v1.1.2 // indirect
+	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/orisano/gosax v1.1.4 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

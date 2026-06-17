@@ -8,7 +8,7 @@ tasks:
     env:
       CGO_CFLAGS: -IC:\PROGRA~2\WinFsp\inc\fuse
     cmds:
-      - go build -ldflags="-s -w" -o kaimen.exe
+      - go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
       - cp kaimen.exe ../releases/Kaimen/kaimen.exe
       - cp camie-tagger-v2_quantized.onnx ../releases/Kaimen/camie-tagger-v2_quantized.onnx
       - cp camie-tagger-v2-metadata.json ../releases/Kaimen/camie-tagger-v2-metadata.json

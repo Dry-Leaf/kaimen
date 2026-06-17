@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"io"
@@ -19,6 +20,7 @@ import (
 	"github.com/araddon/dateparse"
 	"github.com/at-wat/ebml-go"
 	"github.com/at-wat/ebml-go/webm"
+	gih "github.com/corona10/goimagehash"
 	"github.com/evanoberholster/imagemeta"
 	"github.com/evanoberholster/imagemeta/meta/xmp"
 )
@@ -86,6 +88,19 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		duration = val
 	}
 
+	f, err := os.Open(path)
+	Err_check(err)
+	defer f.Close()
+
+	file_buffer := bytes.NewBuffer(nil)
+	io.Copy(file_buffer, f)
+
+	img, _, err := image.Decode(file_buffer)
+	Err_check(err)
+
+	hash, err := gih.PerceptionHash(img)
+	Err_check(err)
+
 	// none of the below will work. everything in found_meta is actually string
 	if complete_meta {
 		fmt.Println("complete")
@@ -96,7 +111,8 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 			"timestamp": ts.Unix(),
 			"width":     width, "height": height,
 			"duration": duration,
-			"type":     ext}
+			"type":     ext,
+			"phash":    hash.ToString()}
 	}
 
 	var timestamp string
@@ -105,10 +121,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 	} else {
 		timestamp = info.ModTime().String()
 	}
-
-	f, err := os.Open(path)
-	Err_check(err)
-	defer f.Close()
 
 	if ext == ".jpg" || ext == ".png" || ext == ".gif" {
 		meta, err := imagemeta.Decode(f)
@@ -152,5 +164,5 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		"width":     width, "height": height,
 		"duration": duration,
 		"type":     ext,
-	}
+		"phash":    hash.ToString()}
 }
