@@ -30,6 +30,16 @@ type MIRROR_FILE struct {
 	file_path string
 }
 
+var meta_query_patterns = map[string]*regexp.Regexp{
+	"name":     regexp.MustCompile(`name:(.+)`),
+	"width":    regexp.MustCompile(`width:([<>])?(\d+)`),
+	"height":   regexp.MustCompile(`height:([<>])?(\d+)`),
+	"duration": regexp.MustCompile(`duration:([<>])?(\d+)([smh])`),
+	"date":     regexp.MustCompile(`date:(\d+-\d\d-\d\d)(?:..(\d+-\d\d-\d\d))?`),
+	"age":      regexp.MustCompile(`age:(\d+)(mo|[smhdwy])\.\.(\d+)(mo|[smhdwy])`),
+}
+
+// write statements & built queries
 const (
 	file_table = `CREATE TABLE IF NOT EXISTS files (
 		md5 TEXT PRIMARY KEY,
@@ -93,15 +103,9 @@ const (
 			WHERE name = OLD.tag;
 		END;`
 
-	ignore_exists = `SELECT COUNT(md5) FROM files WHERE md5 = ? AND ignore = TRUE;`
-
-	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
-
 	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?;`
 
 	update_tag_cat = `UPDATE tags SET category = ? WHERE name = ?;`
-
-	query_recent_images = `SELECT md5, extension, file_path FROM files WHERE ignore = FALSE ORDER BY rowid DESC LIMIT 50;`
 
 	ignore_deletion = `UPDATE files SET ignore = FALSE WHERE md5 = ?;`
 
@@ -118,16 +122,6 @@ const (
 	file_tag_rindex = `CREATE INDEX idx_file_tags_tag_md5 ON file_tags (tag, md5);`
 
 	tag_index = `CREATE INDEX idx_tags_name_freq ON tags(name ASC, freq DESC);`
-
-	file_count = `SELECT COUNT(*) FROM files WHERE ignore = FALSE;`
-
-	tag_query = `SELECT * FROM tags WHERE name LIKE ?1 || '%' AND freq >= ?2
-		ORDER BY (name = ?1) DESC, freq DESC LIMIT ?3;`
-
-	bg_query = `SELECT COUNT(*) FROM file_tags ft WHERE ft.md5 = ? AND ft.tag LIKE '%background'`
-
-	artist_query = `SELECT COUNT(*) FROM file_tags ft JOIN tags t on ft.tag = t.name
-		WHERE ft.md5 = ? AND t.category = '1'`
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
@@ -171,33 +165,88 @@ const (
 		numeric_value <= unixepoch('now', ?)
 		AND numeric_value >= unixepoch('now', ?)`
 
-	gather_query = `SELECT tag FROM file_tags WHERE md5 = ?`
-
-	gather_artist = `SELECT tag FROM file_tags ft INNER JOIN tags t ON t.name = ft.tag WHERE md5 = ? AND t.category = 1`
-
-	gather_metadata = `SELECT property, CAST(numeric_value AS INTEGER) as numeric_value, text_value FROM metadata WHERE md5 = ?`
-
-	path_query = `SELECT file_path FROM files WHERE md5 = ?`
+	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
 )
 
-var meta_query_patterns = map[string]*regexp.Regexp{
-	"name":     regexp.MustCompile(`name:(.+)`),
-	"width":    regexp.MustCompile(`width:([<>])?(\d+)`),
-	"height":   regexp.MustCompile(`height:([<>])?(\d+)`),
-	"duration": regexp.MustCompile(`duration:([<>])?(\d+)([smh])`),
-	"date":     regexp.MustCompile(`date:(\d+-\d\d-\d\d)(?:..(\d+-\d\d-\d\d))?`),
-	"age":      regexp.MustCompile(`age:(\d+)(mo|[smhdwy])\.\.(\d+)(mo|[smhdwy])`),
+type ReadSQL int
+
+const (
+	ignore_exists ReadSQL = iota
+	query_recent_images
+	file_count
+	tag_query
+	bg_query
+	artist_query
+	gather_query
+	gather_artist
+	gather_metadata
+	path_query
+)
+
+// static queries
+var readSQLStrs = [...]string{
+	`SELECT COUNT(md5) FROM files WHERE md5 = ? AND ignore = TRUE;`,
+
+	`SELECT md5, extension, file_path FROM files ORDER BY rowid DESC LIMIT 50;`,
+
+	`SELECT COUNT(*) FROM files;`,
+
+	`SELECT * FROM tags WHERE name LIKE ?1 || '%' AND freq >= ?2
+		ORDER BY (name = ?1) DESC, freq DESC LIMIT ?3;`,
+
+	`SELECT COUNT(*) FROM file_tags ft WHERE ft.md5 = ? AND ft.tag LIKE '%background'`,
+
+	`SELECT COUNT(*) FROM file_tags ft JOIN tags t on ft.tag = t.name
+		WHERE ft.md5 = ? AND t.category = '1'`,
+
+	`SELECT tag FROM file_tags WHERE md5 = ?`,
+
+	`SELECT tag FROM file_tags ft INNER JOIN tags t ON t.name = ft.tag WHERE md5 = ? AND t.category = 1`,
+
+	`SELECT property, CAST(numeric_value AS INTEGER) as numeric_value, text_value FROM metadata WHERE md5 = ?`,
+
+	`SELECT file_path FROM files WHERE md5 = ?`,
+}
+
+const Max_conns = 5
+
+var readConns = make(chan []*sql.Stmt, Max_conns)
+
+func Checkout() []*sql.Stmt {
+	return <-readConns
+}
+func Checkin(c []*sql.Stmt) {
+	readConns <- c
+}
+
+func Make_Conns() {
+	prep := func(SQL string) *sql.Stmt {
+		conn, err := sql.Open("sqlite3", db_uri)
+		Err_check(err)
+		stmt, err := conn.Prepare(SQL)
+		Err_check(err)
+		return stmt
+	}
+
+	for i := 0; i < Max_conns; i++ {
+		var read_stmts []*sql.Stmt
+		for _, str := range readSQLStrs {
+			read_stmts = append(read_stmts, prep(str))
+		}
+		readConns <- read_stmts
+	}
 }
 
 func gather_tags(md5sum string) map[string]string {
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
+	stmts := Checkout()
+	defer Checkin(stmts)
 
-	gather_single_col := func(query, combiner string) string {
+	gather_single_col := func(query ReadSQL, combiner string) string {
 		var arr []string
 
-		rows, err := conn.Query(query, md5sum)
+		stmt := stmts[query]
+
+		rows, err := stmt.Query(md5sum)
 		if err != sql.ErrNoRows {
 			Err_check(err)
 		}
@@ -219,9 +268,9 @@ func gather_tags(md5sum string) map[string]string {
 
 	var path string
 
-	path_query_stmt, err := conn.Prepare(path_query)
-	Err_check(err)
-	err = path_query_stmt.QueryRow(md5sum).Scan(&path)
+	path_query_stmt := stmts[path_query]
+
+	err := path_query_stmt.QueryRow(md5sum).Scan(&path)
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	} else {
@@ -233,7 +282,8 @@ func gather_tags(md5sum string) map[string]string {
 	var width int64
 	var height int64
 
-	rows, err := conn.Query(gather_metadata, md5sum)
+	gather_metadata_stmt := stmts[gather_metadata]
+	rows, err := gather_metadata_stmt.Query(md5sum)
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
@@ -281,17 +331,12 @@ func gather_tags(md5sum string) map[string]string {
 }
 
 func ignore_check(md5sum string) int {
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
-
-	tx, err := conn.Begin()
-	defer tx.Rollback()
+	stmts := Checkout()
+	defer Checkin(stmts)
 
 	var result int
 
-	ignore_check_stmt, err := tx.Prepare(ignore_exists)
-	Err_check(err)
+	ignore_check_stmt := stmts[ignore_exists]
 	ignore_check_stmt.QueryRow(md5sum).Scan(&result)
 
 	return result
@@ -339,14 +384,15 @@ func delete_file(path string) {
 	update(counter)
 }
 
-func get_count(query string, params ...any) int {
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
+func get_count(query ReadSQL, params ...any) int {
+	stmts := Checkout()
+	defer Checkin(stmts)
+
+	stmt := stmts[query]
 
 	var result int
 
-	conn.QueryRow(query, params...).Scan(&result)
+	stmt.QueryRow(params...).Scan(&result)
 
 	return result
 }
@@ -361,11 +407,12 @@ type tag struct {
 func get_suggestions(query string, min, limit float64) []tag {
 	prev_autosugg = query
 
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
+	stmts := Checkout()
+	defer Checkin(stmts)
 
-	rows, err := conn.Query(tag_query, query, min, limit)
+	tag_query_stmt := stmts[tag_query]
+
+	rows, err := tag_query_stmt.Query(query, min, limit)
 	Err_check(err)
 	defer rows.Close()
 
@@ -503,9 +550,6 @@ func tag_query_build(q_string string) string {
 }
 
 func Edit_tag(name string, category float64) {
-	fmt.Println("haaaa")
-	fmt.Println(name)
-	fmt.Println(category)
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -645,11 +689,12 @@ func query(q_string string) []string {
 func query_recent() []string {
 	var nams []string
 
-	conn, err := sql.Open("sqlite3", db_uri)
-	Err_check(err)
-	defer conn.Close()
+	stmts := Checkout()
+	defer Checkin(stmts)
 
-	file_rows, err := conn.Query(query_recent_images)
+	query_ri_stmt := stmts[query_recent_images]
+
+	file_rows, err := query_ri_stmt.Query()
 	if err != sql.ErrNoRows {
 		Err_check(err)
 	}
@@ -715,12 +760,9 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 	Err_check(err)
 	new_image_stmt.Exec(md5sum, ext, path, to_ignore)
 
-	if to_ignore {
-		tx.Commit()
-		return
+	if !to_ignore {
+		tag_iterate(md5sum, tags, inferred, tx)
 	}
-
-	tag_iterate(md5sum, tags, inferred, tx)
 
 	insert_counter += 1
 

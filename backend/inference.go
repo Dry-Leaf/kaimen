@@ -9,6 +9,7 @@ import (
 	_ "image/png"
 	"math"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -131,7 +132,11 @@ func infer_tags_closure() func(string, string) []string {
 
 	channel_size := img_size * img_size
 
-	ort.SetSharedLibraryPath(`.\onnxruntime.dll`)
+	local_DLL := filepath.Join(exe_dir, "onnxruntime.dll")
+	absPath, _ := filepath.Abs(local_DLL)
+
+	fmt.Println("Forcing DLL from:", absPath)
+	ort.SetSharedLibraryPath(absPath)
 
 	err = ort.InitializeEnvironment()
 	Err_check(err)
