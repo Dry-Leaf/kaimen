@@ -69,6 +69,7 @@ class MyTrayListener extends TrayListener {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
+  await windowManager.setPreventClose(true);
 
   fvp.registerWith();
 
@@ -96,10 +97,22 @@ class UI extends StatefulWidget {
   State<UI> createState() => _UIState();
 }
 
-class _UIState extends State<UI> {
+class _UIState extends State<UI> with WindowListener {
   @override
   void initState() {
     super.initState();
+    windowManager.addListener(this);
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    windowManager.hide();
   }
 
   @override
