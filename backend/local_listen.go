@@ -43,52 +43,61 @@ var watch_kill sync.Map
 
 func dequeue() {
 	interval := time.Minute
-	for range time.Tick(interval) {
-		now := time.Now()
-		pending_create.Range(func(key, _ any) bool {
-			path := key.(string)
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 
-			info, err := os.Stat(path)
-			if err != nil {
-				pending_create.Delete(path)
-				update(counter)
-				//fmt.Println("deleted", path)
-				return true
-			}
+	for {
+		select {
+		case <-shutdownChan:
+			return
 
-			mtype, err := mimetype.DetectFile(path)
-			Err_check(err)
-
-			if now.Sub(info.ModTime()) >= interval {
-				//fmt.Println("About to process", path)
-				go func(p string) {
-					md5sum := process(p, mtype.Extension(), info)
-					pending_create.Delete(p)
-					pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
-					update(counter)
-				}(path)
-			}
-			return true
-		})
-
-		if pending_create.IsEmpty() {
-			pending_remove.Range(func(key, _ any) bool {
+		case <-ticker.C:
+			// 3. Your core logic goes here
+			now := time.Now()
+			pending_create.Range(func(key, _ any) bool {
 				path := key.(string)
-				//fmt.Println("from remove queue")
-				//fmt.Println(path)
-				writeMu.Lock()
-				_, err := os.Stat(path)
+
+				info, err := os.Stat(path)
 				if err != nil {
-					if os.IsNotExist(err) {
-						delete_file(path)
-					} else {
-						Err_check(err)
-					}
+					pending_create.Delete(path)
+					update(counter)
+					return true
 				}
-				pending_remove.Delete(path)
-				writeMu.Unlock()
+
+				mtype, err := mimetype.DetectFile(path)
+				Err_check(err)
+
+				if now.Sub(info.ModTime()) >= interval {
+					// NOTE: Spinning up un-tracked goroutines right at shutdown
+					// can still be cut off. For absolute safety, tracking these with
+					// another WaitGroup is ideal, but fixing the main loop is priority #1.
+					go func(p string) {
+						md5sum := process(p, mtype.Extension(), info)
+						pending_create.Delete(p)
+						pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
+						update(counter)
+					}(path)
+				}
 				return true
 			})
+
+			if pending_create.IsEmpty() {
+				pending_remove.Range(func(key, _ any) bool {
+					path := key.(string)
+					writeMu.Lock()
+					_, err := os.Stat(path)
+					if err != nil {
+						if os.IsNotExist(err) {
+							delete_file(path)
+						} else {
+							Err_check(err)
+						}
+					}
+					pending_remove.Delete(path)
+					writeMu.Unlock()
+					return true
+				})
+			}
 		}
 	}
 }

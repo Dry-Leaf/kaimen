@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
+	"time"
 )
+
+var shutdownChan = make(chan struct{})
 
 var front_open atomic.Bool
 
@@ -36,7 +41,7 @@ func open_front() {
 }
 
 func onExit() {
-	os.Exit(0)
+	close(shutdownChan)
 }
 
 func init() {
@@ -69,11 +74,31 @@ func main() {
 	indexing = make(map[string]bool)
 	initial_crawl()
 
-	go inference_worker()
-	go dequeue()
-	go dequeue_inference()
-	go server()
-	go open_front()
+	var wg sync.WaitGroup
 
-	mount()
+	wg.Go(inference_worker)
+	wg.Go(dequeue)
+	wg.Go(dequeue_inference)
+	wg.Go(server)
+
+	go open_front()
+	go mount()
+
+	<-shutdownChan
+
+	if httpServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
+		defer cancel()
+
+		if err := httpServer.Shutdown(ctx); err != nil {
+			fmt.Printf("Server forced to shutdown: %v\n", err)
+		}
+	}
+
+	if host != nil {
+		host.Unmount()
+	}
+	close(inferQueue)
+
+	wg.Wait()
 }

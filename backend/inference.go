@@ -254,35 +254,42 @@ var infer_tags = infer_tags_closure()
 var inferQueue = make(chan [3]string, 100)
 
 func inference_worker() {
-	go func() {
-		for triplet := range inferQueue {
-			md5sum, path, ext := triplet[0], triplet[1], triplet[2]
-			if _, err := os.Stat(path); err != nil {
-				pending_infer.Delete(triplet)
-				continue
-			}
-
-			results := infer_tags(md5sum, path)
-			fmt.Println("INFERRED:", path)
-			fmt.Println(results)
-			insert_tags(md5sum, path, ext, results, false, false, true)
-
+	for triplet := range inferQueue {
+		md5sum, path, ext := triplet[0], triplet[1], triplet[2]
+		if _, err := os.Stat(path); err != nil {
 			pending_infer.Delete(triplet)
+			continue
 		}
-	}()
+
+		results := infer_tags(md5sum, path)
+		fmt.Println("INFERRED:", path)
+		fmt.Println(results)
+		insert_tags(md5sum, path, ext, results, false, false, true)
+
+		pending_infer.Delete(triplet)
+	}
 }
 
 func dequeue_inference() {
 	interval := time.Minute
-	for range time.Tick(interval) {
-		pending_infer.Range(func(key, _ any) bool {
-			path := key.([3]string)
-			select {
-			case inferQueue <- path:
-			default:
-				fmt.Println("Inference queue is full!")
-			}
-			return true
-		})
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-shutdownChan:
+			return
+
+		case <-ticker.C:
+			pending_infer.Range(func(key, _ any) bool {
+				path := key.([3]string)
+				select {
+				case inferQueue <- path:
+				default:
+					fmt.Println("Inference queue is full!")
+				}
+				return true
+			})
+		}
 	}
 }

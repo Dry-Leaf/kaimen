@@ -8,6 +8,8 @@ import (
 	"github.com/winfsp/cgofuse/fuse"
 )
 
+var host *fuse.FileSystemHost
+
 const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 
 var result_map = make(map[string]string)
@@ -137,6 +139,6 @@ func mount() {
 
 	os.RemoveAll(search_dir)
 	hellofs := &KAIMEN_FS{}
-	host := fuse.NewFileSystemHost(hellofs)
+	host = fuse.NewFileSystemHost(hellofs)
 	host.Mount("search", os.Args[1:])
 }

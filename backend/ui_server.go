@@ -60,6 +60,7 @@ type message struct {
 var (
 	activeConn *websocket.Conn
 	connMu     sync.Mutex
+	httpServer *http.Server
 )
 
 func Open_and_select(path string) error {
@@ -276,8 +277,15 @@ func server() {
 	err = os.WriteFile(port_path, []byte(strconv.Itoa(actualPort)), 0644)
 	Err_check(err)
 
+	defer os.Remove(port_path)
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handle)
-	err = http.Serve(listener, mux)
+
+	httpServer = &http.Server{
+		Handler: mux,
+	}
+
+	err = httpServer.Serve(listener)
 	log.Fatal(err)
 }
