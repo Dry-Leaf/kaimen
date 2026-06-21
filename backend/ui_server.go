@@ -186,14 +186,21 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case autosuggest:
-			lw := strings.Trim(last_word_reg.FindString(req.Value.([]interface{})[0].(string)), "- ")
+			full_body := req.Value.([]interface{})[0].(string)
+			cursor_position := int(req.Value.([]interface{})[1].(float64))
+			to_cursor_body := full_body[:cursor_position]
+
+			lw := strings.Trim(last_word_reg.FindString(to_cursor_body), "- ")
 
 			fmt.Println("LAST WORD")
 			fmt.Println(lw)
 
+			fmt.Println("cursor position!")
+			fmt.Println(req.Value.([]interface{})[1].(float64))
+
 			var results []tag
 			if lw != "" {
-				results = get_suggestions(lw, req.Value.([]interface{})[1].(float64), req.Value.([]interface{})[2].(float64))
+				results = get_suggestions(lw, req.Value.([]interface{})[2].(float64), req.Value.([]interface{})[3].(float64))
 			}
 			resp := message{Type: autosuggest, Value: results}
 

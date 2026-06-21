@@ -133,10 +133,10 @@ func infer_tags_closure() func(string, string) []string {
 	channel_size := img_size * img_size
 
 	local_DLL := filepath.Join(exe_dir, "onnxruntime.dll")
-	absPath, _ := filepath.Abs(local_DLL)
+	abs_path, _ := filepath.Abs(local_DLL)
 
-	fmt.Println("Forcing DLL from:", absPath)
-	ort.SetSharedLibraryPath(absPath)
+	fmt.Println("Forcing DLL from:", abs_path)
+	ort.SetSharedLibraryPath(abs_path)
 
 	err = ort.InitializeEnvironment()
 	Err_check(err)
@@ -188,8 +188,8 @@ func infer_tags_closure() func(string, string) []string {
 
 		refined_logits := refinedTensor.GetData()
 
-		var character_hold []string
-		var copyright_hold []string
+		// var character_hold []string
+		// var copyright_hold []string
 
 		for idx, logit := range refined_logits {
 			prob := float32(1.0 / (1.0 + math.Exp(float64(-logit))))
@@ -199,7 +199,7 @@ func infer_tags_closure() func(string, string) []string {
 				tag_name := metadata.DatasetInfo.TagMapping.TagToIDX[idx]
 
 				switch tag_cat {
-				case "rating", "year", "meta":
+				case "rating", "year", "meta", "character", "copyright":
 					continue
 				case "artist":
 					//check if artist already applied
@@ -210,11 +210,11 @@ func infer_tags_closure() func(string, string) []string {
 						fmt.Println("dropped artist")
 						fmt.Println(tag_name)
 					}
-				case "character":
-					character_hold = append(character_hold, tag_name)
-				case "copyright":
-					copyright_hold = append(copyright_hold, tag_name)
-					results = append(results, tag_name)
+				// case "character":
+				// 	character_hold = append(character_hold, tag_name)
+				// case "copyright":
+				// 	copyright_hold = append(copyright_hold, tag_name)
+				// 	results = append(results, tag_name)
 				case "general":
 					//check for other backgrounds if tag_name includes background
 					if strings.Contains(tag_name, "background") {
@@ -227,23 +227,23 @@ func infer_tags_closure() func(string, string) []string {
 					}
 					results = append(results, tag_name)
 				default:
-					results = append(results, tag_name)
+					continue
 				}
 			}
 		}
 		// only include characters with a corresponding copyright
-		for _, character := range character_hold {
-			if !strings.Contains(character, "(") {
-				results = append(results, character)
-				break
-			}
-			for _, copyright := range copyright_hold {
-				if strings.Contains(character, copyright) {
-					results = append(results, character)
-					break
-				}
-			}
-		}
+		// for _, character := range character_hold {
+		// 	if !strings.Contains(character, "(") {
+		// 		results = append(results, character)
+		// 		break
+		// 	}
+		// 	for _, copyright := range copyright_hold {
+		// 		if strings.Contains(character, copyright) {
+		// 			results = append(results, character)
+		// 			break
+		// 		}
+		// 	}
+		// }
 
 		return results
 	}

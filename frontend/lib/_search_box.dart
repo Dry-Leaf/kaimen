@@ -12,6 +12,7 @@ import '_backend_conn.dart'
 mixin WithSuggestions on ConsumerState {
   final textController = TextEditingController();
   String priorText = "";
+  int priorCursor = 0;
   late final Conn conn;
 
   final FocusNode textFieldFocusNode = FocusNode();
@@ -33,7 +34,6 @@ mixin WithSuggestions on ConsumerState {
 
     textController.addListener(() => autoSuggestReq(suggLimit, minsugg));
     textFieldFocusNode.addListener(updateVisibilityChange);
-    textFieldFocusNode.addListener(handleFocusAndCaret);
     suggestions.addListener(updateVisibilityChange);
     textController.addListener(updateVisibilityChange);
     suggestionsFocusNode.addListener(updateVisibilityChange);
@@ -41,15 +41,18 @@ mixin WithSuggestions on ConsumerState {
 
   void autoSuggestReq(int suggLimit, int minsugg) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (textController.text.isNotEmpty) {
-        if (textController.text == priorText) {
+      if (textController.text.isNotEmpty && textFieldFocusNode.hasFocus) {
+        if (textController.text == priorText &&
+            textController.selection.baseOffset == priorCursor) {
           return;
         }
         setState(() {
           priorText = textController.text;
+          priorCursor = textController.selection.baseOffset;
         });
         conn.send(Message.autosuggest, [
           textController.text,
+          textController.selection.baseOffset,
           minsugg,
           suggLimit,
         ]);
@@ -71,17 +74,6 @@ mixin WithSuggestions on ConsumerState {
     }
   }
 
-  void handleFocusAndCaret() {
-    if (textFieldFocusNode.hasFocus) {
-      Future.microtask(() {
-        final int textLength = textController.text.length;
-        textController.selection = TextSelection.fromPosition(
-          TextPosition(offset: textLength),
-        );
-      });
-    }
-  }
-
   final link = LayerLink();
   final prior = Queue<String>();
   int priorIndex = 0;
@@ -93,14 +85,7 @@ mixin WithSuggestions on ConsumerState {
   }) {
     if (event is KeyDownEvent) {
       if (textFieldFocusNode.hasFocus) {
-        if (event.logicalKey == LogicalKeyboardKey.tab &&
-            suggestions.value.isNotEmpty) {
-          textController.text += suggestions.value[0].remainder;
-          textController.selection = TextSelection.collapsed(
-            offset: textController.text.length,
-          );
-          return KeyEventResult.handled;
-        } else if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
+        if (event.logicalKey == LogicalKeyboardKey.arrowDown &&
             suggestions.value.isNotEmpty) {
           suggestionsFocusNode.requestFocus();
           return KeyEventResult.handled;

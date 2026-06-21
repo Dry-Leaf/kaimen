@@ -62,14 +62,28 @@ class _SuggestionList extends State<SuggestionList> {
   }
 
   void _returnFocus(int index) {
-    widget._textController.text += widget.suggestions.value[index].remainder;
-    if (widget.multi) {
-      widget._textController.text += ' ';
-    }
-    widget._textController.selection = TextSelection.collapsed(
-      offset: widget._textController.text.length,
-    );
+    var remainder = widget.suggestions.value[index].remainder;
+    final inputLength = widget._textController.text.length;
+
+    final int cursorPos = widget._textController.selection.baseOffset;
+
+    final spaceInclude = widget.multi && cursorPos == inputLength ? " " : "";
+    remainder += spaceInclude;
+
+    final newText =
+        "${widget._textController.text.substring(0, cursorPos)}$remainder$spaceInclude${widget._textController.text.substring(cursorPos)}";
+    final newCursorPosition = cursorPos + remainder.length;
+
     widget._textFieldFocusNode.requestFocus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget._textController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.fromPosition(
+          TextPosition(offset: newCursorPosition),
+        ),
+      );
+    });
   }
 
   String formatNumber(int number) {
@@ -130,10 +144,20 @@ class _SuggestionList extends State<SuggestionList> {
         return KeyEventResult.handled;
       default:
         if (event.character != null && event.character!.isNotEmpty) {
-          widget._textController.text += event.character!;
-          widget._textController.selection = TextSelection.collapsed(
-            offset: widget._textController.text.length,
-          );
+          final int cursorPos = widget._textController.selection.baseOffset;
+          final newText =
+              "${widget._textController.text.substring(0, cursorPos)}${event.character!}${widget._textController.text.substring(cursorPos)}";
+
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final newCursorPosition = cursorPos + 1;
+
+            widget._textController.value = TextEditingValue(
+              text: newText,
+              selection: TextSelection.fromPosition(
+                TextPosition(offset: newCursorPosition),
+              ),
+            );
+          });
         }
         widget._textFieldFocusNode.requestFocus();
         setState(() {
