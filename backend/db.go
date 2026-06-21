@@ -39,35 +39,51 @@ var meta_query_patterns = map[string]*regexp.Regexp{
 	"age":      regexp.MustCompile(`age:(\d+)(mo|[smhdwy])\.\.(\d+)(mo|[smhdwy])`),
 }
 
-// write statements & built queries
-const (
-	file_table = `CREATE TABLE IF NOT EXISTS files (
+var db_SQL = [...]string{
+	`CREATE TABLE IF NOT EXISTS files (
 		md5 TEXT PRIMARY KEY,
 		extension TEXT NOT NULL,
 		file_path TEXT NOT NULL,
-		ignore INTEGER NOT NULL,
-	);`
+		ignore INTEGER NOT NULL
+	);`,
 	// name, type, width, height, size(in bytes), mod time OR XMP Create Date, duration of videos(in seconds)
 	// perception hash
-	metadata_table = `CREATE TABLE IF NOT EXISTS metadata (
+	`CREATE TABLE IF NOT EXISTS metadata (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		property TEXT NOT NULL,
 		numeric_value REAL,
 		text_value TEXT,
 		PRIMARY KEY (md5,property)
-	);`
-	tag_table = `CREATE TABLE IF NOT EXISTS tags (
+	);`,
+	`CREATE TABLE IF NOT EXISTS tags (
 		name TEXT PRIMARY KEY,
 		freq INT NOT NULL,
 		category INT NOT NULL
-	);`
-	file_tag_table = `CREATE TABLE IF NOT EXISTS file_tags (
+	);`,
+	`CREATE TABLE IF NOT EXISTS file_tags (
 		md5 TEXT REFERENCES files(md5) ON DELETE CASCADE,
 		tag TEXT REFERENCES tags(name) ON DELETE CASCADE,
 		inferred INTEGER,
 		PRIMARY KEY (md5,tag)
-	);`
+	);`,
+	`CREATE TRIGGER tag_increment
+		AFTER INSERT ON file_tags
+		BEGIN
+			UPDATE tags
+			SET freq = freq + 1
+			WHERE name = NEW.tag;
+		END;`,
+	`CREATE TRIGGER tag_decrement
+		AFTER DELETE ON file_tags
+		BEGIN
+			UPDATE tags
+			SET freq = freq - 1
+			WHERE name = OLD.tag;
+		END;`,
+}
 
+// write statements & built queries
+const (
 	new_meta = `INSERT INTO metadata(md5,property,numeric_value,text_value) VALUES(?,?,?,?)
 		ON CONFLICT(md5, property) DO NOTHING;`
 
@@ -86,22 +102,6 @@ const (
 		DO UPDATE SET category = ?2;`
 
 	delete_tag = `DELETE FROM tags WHERE name = ?;`
-
-	tag_increment = `CREATE TRIGGER tag_increment
-		AFTER INSERT ON file_tags
-		BEGIN
-			UPDATE tags
-			SET freq = freq + 1
-			WHERE name = NEW.tag;
-		END;`
-
-	tag_decrement = `CREATE TRIGGER tag_decrement
-		AFTER DELETE ON file_tags
-		BEGIN
-			UPDATE tags
-			SET freq = freq - 1
-			WHERE name = OLD.tag;
-		END;`
 
 	update_path = `UPDATE files SET file_path = ? WHERE md5 = ?;`
 
@@ -785,13 +785,32 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 }
 
 func new_db() {
-	// needs updating for next release
-	r, err := embedFS.ReadFile("booru.db.gz")
+	file, err := os.Create(db_path)
+	Err_check(err)
+
+	file.Close()
+
+	conn, err := sql.Open("sqlite3", db_uri)
+	Err_check(err)
+	defer conn.Close()
+
+	tx, err := conn.Begin()
+	defer tx.Rollback()
+
+	for _, stmt := range db_SQL {
+		statement, err := tx.Prepare(stmt)
+		Err_check(err)
+		statement.Exec()
+	}
+
+	r, err := embedFS.ReadFile("insert_tags.sql.gz")
 	Err_check(err)
 	r2, err := gzip.NewReader(bytes.NewReader(r))
 	defer r2.Close()
-	empty_db, err := io.ReadAll(r2)
+	tag_file, err := io.ReadAll(r2)
 
-	err = os.WriteFile(db_path, empty_db, 0644)
+	_, err = tx.Exec(string(tag_file))
 	Err_check(err)
+
+	tx.Commit()
 }

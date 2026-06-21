@@ -4,4 +4,6 @@ test*
 *.onnx
 tasks.txt
 tasks.md
+.tags.db
+insert_tags.sql
 z
