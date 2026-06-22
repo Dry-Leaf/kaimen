@@ -20,6 +20,7 @@ enum Message {
   deletesource,
   reordersources,
   editignore,
+  editinferred,
   newdirectory,
   deletedirectory,
   editdirectory,

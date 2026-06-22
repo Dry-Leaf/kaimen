@@ -38,6 +38,7 @@ const (
 	deletesource
 	reordersources
 	editignore
+	editinferred
 	newdirectory
 	deletedirectory
 	editdirectory
@@ -233,7 +234,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			if len(value) > 0 {
 				overwrite_tags(value)
 			}
-		case createsource, editsource, deletesource, reordersources, editignore, newdirectory, deletedirectory:
+		case createsource, editsource, deletesource, reordersources,
+			editignore, editinferred, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)
 		case openresults:
 			value := req.Value.(string)

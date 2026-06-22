@@ -188,18 +188,15 @@ func infer_tags_closure() func(string, string) []string {
 
 		refined_logits := refinedTensor.GetData()
 
-		// var character_hold []string
-		// var copyright_hold []string
-
 		for idx, logit := range refined_logits {
 			prob := float32(1.0 / (1.0 + math.Exp(float64(-logit))))
 
-			if prob >= .80 {
+			if prob >= .70 {
 				tag_cat := metadata.DatasetInfo.TagMapping.TagToCAT[idx]
 				tag_name := metadata.DatasetInfo.TagMapping.TagToIDX[idx]
 
 				switch tag_cat {
-				case "rating", "year", "meta", "character", "copyright":
+				case "rating", "year", "meta":
 					continue
 				case "artist":
 					//check if artist already applied
@@ -210,11 +207,10 @@ func infer_tags_closure() func(string, string) []string {
 						fmt.Println("dropped artist")
 						fmt.Println(tag_name)
 					}
-				// case "character":
-				// 	character_hold = append(character_hold, tag_name)
-				// case "copyright":
-				// 	copyright_hold = append(copyright_hold, tag_name)
-				// 	results = append(results, tag_name)
+				case "copyright", "character":
+					if prob >= .95 {
+						results = append(results, tag_name)
+					}
 				case "general":
 					//check for other backgrounds if tag_name includes background
 					if strings.Contains(tag_name, "background") {
@@ -231,19 +227,6 @@ func infer_tags_closure() func(string, string) []string {
 				}
 			}
 		}
-		// only include characters with a corresponding copyright
-		// for _, character := range character_hold {
-		// 	if !strings.Contains(character, "(") {
-		// 		results = append(results, character)
-		// 		break
-		// 	}
-		// 	for _, copyright := range copyright_hold {
-		// 		if strings.Contains(character, copyright) {
-		// 			results = append(results, character)
-		// 			break
-		// 		}
-		// 	}
-		// }
 
 		return results
 	}

@@ -38,11 +38,12 @@ class _MiscTabState extends ConsumerState<MiscTab> {
       error: (err, stack) => Text('Error: $err'),
       data: (config) {
         bool ignoreCheck = config['Ignore_enabled'];
+        bool inferredCheck = config['Inferred_enabled'];
 
         return Scaffold(
           body: Center(
             child: SizedBox(
-              width: 220,
+              width: 250,
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -55,6 +56,13 @@ class _MiscTabState extends ConsumerState<MiscTab> {
                         conn.send(Message.editignore, !ignoreCheck);
                       },
                       title: const Text("Ignore Unfound"),
+                    ),
+                    CheckboxListTile(
+                      value: inferredCheck,
+                      onChanged: (bool? value) {
+                        conn.send(Message.editinferred, !inferredCheck);
+                      },
+                      title: const Text("Query Inferred Tags"),
                     ),
                   ],
                 ),

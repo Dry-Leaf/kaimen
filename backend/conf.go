@@ -15,9 +15,10 @@ import (
 )
 
 type Config struct {
-	Boards         []SOURCE `toml:"boards"`
-	Ignore_enabled bool     `toml:"IGNORE_ENABLED"`
-	Dirs           []string `toml:"DIRS"`
+	Boards           []SOURCE `toml:"boards"`
+	Inferred_enabled bool     `toml:"INFERRED_ENABLED"`
+	Ignore_enabled   bool     `toml:"IGNORE_ENABLED"`
+	Dirs             []string `toml:"DIRS"`
 }
 
 type SOURCE struct {
@@ -36,15 +37,16 @@ type SOURCE struct {
 var embedFS embed.FS
 
 var (
-	Sources        []SOURCE
-	Dirs           []string
-	confMu         sync.Mutex
-	ustatus        bool
-	Ignore_enabled bool
+	Sources          []SOURCE
+	Dirs             []string
+	confMu           sync.Mutex
+	ustatus          bool
+	Ignore_enabled   bool
+	Inferred_enabled bool
 )
 
 func gather_conf() Config {
-	return Config{Boards: Sources, Dirs: Dirs, Ignore_enabled: Ignore_enabled}
+	return Config{Boards: Sources, Dirs: Dirs, Ignore_enabled: Ignore_enabled, Inferred_enabled: Inferred_enabled}
 }
 
 func validate_source(booru SOURCE) bool {
@@ -78,6 +80,7 @@ func Source_process(conf Config) {
 	Dirs = conf.Dirs
 	Sources = conf.Boards
 	Ignore_enabled = conf.Ignore_enabled
+	Inferred_enabled = conf.Inferred_enabled
 
 	for i := range Sources {
 		booru := &Sources[i]
@@ -172,6 +175,10 @@ func Edit_conf(mode MessageType, data any) {
 		update_front = true
 		Ignore_enabled = data.(bool)
 		conf.Ignore_enabled = Ignore_enabled
+	case editinferred:
+		update_front = true
+		Inferred_enabled = data.(bool)
+		conf.Inferred_enabled = Inferred_enabled
 	case newdirectory:
 		update_front = true
 		dir := data.(string)

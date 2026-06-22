@@ -125,13 +125,15 @@ const (
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
+	exclude_inferred = `WITH confirmed_file_tags AS (SELECT * FROM file_tags WHERE inferred = 0) `
+
 	ignored_query = `WHERE f.ignore = TRUE `
 
-	query_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag = "%s" `
+	query_include = `JOIN %s ft%[2]d ON ft%[2]d.md5 = f.md5 AND ft%[2]d.tag = "%s" `
 
-	query_fuzzy_include = `JOIN file_tags ft%[1]d ON ft%[1]d.md5 = f.md5 AND ft%[1]d.tag LIKE "%s" `
+	query_fuzzy_include = `JOIN %s ft%[2]d ON ft%[2]d.md5 = f.md5 AND ft%[2]d.tag LIKE "%s" `
 
-	query_exclude = `LEFT JOIN file_tags fe%[1]d ON fe%[1]d.md5 = f.md5 AND fe%[1]d.tag = "%s" `
+	query_exclude = `LEFT JOIN %s fe%[2]d ON fe%[2]d.md5 = f.md5 AND fe%[2]d.tag = "%s" `
 
 	query_exclude_where = `fe%d.md5 IS NULL `
 
@@ -508,9 +510,16 @@ func meta_query_build(pattern string, groups []string) (string, []any) {
 
 func tag_query_build(q_string string) string {
 	var fquery string
+	var ft_table string
 	tags := strings.Split(q_string, " ")
 
-	fquery = query_head
+	if Inferred_enabled {
+		fquery = query_head
+		ft_table = "file_tags"
+	} else {
+		fquery = exclude_inferred + query_head
+		ft_table = "confirmed_file_tags"
+	}
 
 	if len(tags) == 1 && strings.ToLower(tags[0]) == "ignored" {
 		fquery += ignored_query
@@ -522,15 +531,15 @@ func tag_query_build(q_string string) string {
 			if len(tag) > 0 {
 				var cq string
 				if ctag, found := strings.CutPrefix(tag, "-"); found {
-					cq = fmt.Sprintf(query_exclude, i, ctag)
+					cq = fmt.Sprintf(query_exclude, ft_table, i, ctag)
 					exlude_where = append(exlude_where,
-						fmt.Sprintf(query_exclude_where, i))
+						fmt.Sprintf(query_exclude_where, ft_table, i))
 				} else {
 					cquery := query_include
 					if strings.Contains(tag, "%") {
 						cquery = query_fuzzy_include
 					}
-					cq = fmt.Sprintf(cquery, i, tag)
+					cq = fmt.Sprintf(cquery, ft_table, i, tag)
 				}
 				fquery += cq
 			}

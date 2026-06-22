@@ -2,6 +2,8 @@
 
 IGNORE_ENABLED = true
 
+INFERRED_ENABLED = true
+
 # Comma seperated directories to index
 DIRS = [ ]
 
