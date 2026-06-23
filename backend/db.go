@@ -30,6 +30,8 @@ type MIRROR_FILE struct {
 	file_path string
 }
 
+var limit_regex = regexp.MustCompile(`limit:(\d+)`)
+
 var meta_query_patterns = map[string]*regexp.Regexp{
 	"name":     regexp.MustCompile(`name:(.+)`),
 	"width":    regexp.MustCompile(`width:([<>])?(\d+)`),
@@ -137,35 +139,29 @@ const (
 
 	query_exclude_where = `fe%d.md5 IS NULL `
 
-	query_tail = `GROUP BY f.md5;`
+	query_tail = `GROUP BY f.md5 `
 
-	numeric_eq = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property == ? AND numeric_value == ?`
+	query_limit = `ORDER BY f.rowid DESC LIMIT %s`
 
-	numeric_gt = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property == ? AND numeric_value >= ?`
+	meta_query_head = `JOIN metadata md%[1]d ON md%[1]d.md5 = f.md5 AND md%[1]d.property == ? AND `
 
-	numeric_lt = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property == ? AND numeric_value <= ?`
+	numeric_eq = `md%[1]d.numeric_value == ? `
 
-	text_like = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property == ? AND text_value LIKE '%' || ? ||'%'`
+	numeric_gt = `md%[1]d.numeric_value >= ? `
 
-	specific_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property = "timestamp" AND
-		numeric_value >= unixepoch(?)
-		AND numeric_value <= unixepoch(?)`
+	numeric_lt = `md%[1]d.numeric_value <= ? `
 
-	specific_day = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property = "timestamp" AND
-		numeric_value >= unixepoch(?1)
-		AND numeric_value < unixepoch(?1, '+1 day')`
+	text_like = `md%[1]d.text_value LIKE '%%' || ? ||'%%' `
+
+	specific_time_range = `md%[1]d.numeric_value >= unixepoch(?)
+		AND md%[1]d.numeric_value <= unixepoch(?) `
+
+	specific_day = `md%[1]d.numeric_value >= unixepoch(?1)
+		AND md%[1]d.numeric_value < unixepoch(?1, '+1 day') `
 
 	// weeks not built into sqlite, will need conversion logic
-	modded_time_range = `SELECT f.md5, f.extension, f.file_path FROM metadata RIGHT JOIN files f ON metadata.md5 = f.md5
-		WHERE property = "timestamp" AND
-		numeric_value <= unixepoch('now', ?)
-		AND numeric_value >= unixepoch('now', ?)`
+	modded_time_range = `md%[1]d.numeric_value <= unixepoch('now', ?)
+		AND md%[1]d.numeric_value >= unixepoch('now', ?) `
 
 	image_exists = `SELECT COUNT(md5), COALESCE(file_path, '') FROM files WHERE md5 = ?;`
 )
@@ -459,65 +455,68 @@ func age_modifier_build(number, raw string) string {
 	return "-" + number + val
 }
 
-func meta_query_build(pattern string, groups []string) (string, []any) {
+func meta_query_build(patterns []string, groups [][]string) (string, []any) {
 	var fquery string
 	var params []any
 
-	switch pattern {
-	case "name":
-		fquery = text_like
-		params = []any{pattern, groups[1]}
-	case "duration":
-		n, err := strconv.Atoi(groups[2])
-		Err_check(err)
+	for idx, pattern := range patterns {
+		cgroups := groups[idx]
+		cq := fmt.Sprintf(meta_query_head, idx)
+		switch pattern {
+		case "name":
+			cq += fmt.Sprintf(text_like, idx)
+			params = append(params, pattern, cgroups[0])
+		case "duration":
+			n, err := strconv.Atoi(cgroups[1])
+			Err_check(err)
 
-		if groups[3] == "m" {
-			n *= 60
-		}
-		if groups[3] == "h" {
-			n *= 3600
-		}
+			if cgroups[2] == "m" {
+				n *= 60
+			}
+			if cgroups[2] == "h" {
+				n *= 3600
+			}
 
-		groups[2] = strconv.Itoa(n)
-		fallthrough
-	case "width", "height":
-		params = []any{pattern, groups[2]}
+			cgroups[1] = strconv.Itoa(n)
+			fallthrough
+		case "width", "height":
+			params = append(params, pattern, cgroups[1])
 
-		if groups[1] == "" {
-			fquery = numeric_eq
-		} else if groups[1] == ">" {
-			fquery = numeric_gt
-		} else {
-			fquery = numeric_lt
+			if cgroups[0] == "" {
+				cq += fmt.Sprintf(numeric_eq, idx)
+			} else if cgroups[0] == ">" {
+				cq += fmt.Sprintf(numeric_gt, idx)
+			} else {
+				cq += fmt.Sprintf(numeric_lt, idx)
+			}
+		case "date":
+			if cgroups[1] != "" {
+				cq += fmt.Sprintf(specific_time_range, idx)
+				params = append(params, cgroups[0], cgroups[1])
+			} else {
+				cq += fmt.Sprintf(specific_day, idx)
+				params = append(params, cgroups[0])
+			}
+		case "age":
+			cq += fmt.Sprintf(modded_time_range, idx)
+			param1 := age_modifier_build(cgroups[0], cgroups[1])
+			param2 := age_modifier_build(cgroups[2], cgroups[3])
+			params = append(params, param1, param2)
 		}
-	case "date":
-		if groups[2] != "" {
-			fquery = specific_time_range
-			params = []any{groups[1], groups[2]}
-		} else {
-			fquery = specific_day
-			params = []any{groups[1]}
-		}
-	case "age":
-		fquery = modded_time_range
-		param1 := age_modifier_build(groups[1], groups[2])
-		param2 := age_modifier_build(groups[3], groups[4])
-		params = []any{param1, param2}
+		fquery += cq
 	}
 
 	return fquery, params
 }
 
-func tag_query_build(q_string string) string {
+func tag_query_build(q_string, result_limit string) string {
 	var fquery string
 	var ft_table string
 	tags := strings.Split(q_string, " ")
 
 	if Inferred_enabled {
-		fquery = query_head
 		ft_table = "file_tags"
 	} else {
-		fquery = exclude_inferred + query_head
 		ft_table = "confirmed_file_tags"
 	}
 
@@ -555,7 +554,14 @@ func tag_query_build(q_string string) string {
 			}
 		}
 	}
-	return fquery + query_tail
+
+	fquery += query_tail
+
+	if result_limit != "" {
+		fquery += fmt.Sprintf(query_limit, result_limit)
+	}
+
+	return fquery
 }
 
 func Edit_tag(name string, category float64) {
@@ -650,31 +656,64 @@ func query(q_string string) []string {
 	Err_check(err)
 	defer conn.Close()
 
-	var fquery string
 	var params []any
-	var nams []string
 
 	meta_query := false
-	var pattern string
-	var groups []string
+	var fquery, result_limit string
+	var groups [][]string
+	var nams, patterns []string
+
+	if g := limit_regex.FindStringSubmatch(q_string); g != nil {
+		result_limit = g[1]
+		fmt.Println("POST LIMIT DAIYO")
+		fmt.Println(result_limit)
+
+		q_string = q_string[len(g[0]):]
+
+		fmt.Println("rest of query...")
+		fmt.Println(q_string)
+	}
 
 	for p, r := range meta_query_patterns {
-		if g := r.FindStringSubmatch(q_string); g != nil {
+		if g := r.FindStringSubmatchIndex(q_string); g != nil {
+			var cgroups []string
+
+			for i := 2; i < len(g); i += 2 {
+				if g[i] == -1 {
+					cgroups = append(cgroups, "")
+					continue
+				}
+				subq := q_string[g[i]:g[i+1]]
+				cgroups = append(cgroups, subq)
+			}
+
 			meta_query = true
-			pattern = p
-			groups = g
-			break
+			patterns = append(patterns, p)
+			groups = append(groups, cgroups)
+
+			q_string = q_string[0:g[0]] + q_string[g[1]:]
 		}
 	}
 
-	if meta_query {
-		fquery, params = meta_query_build(pattern, groups)
+	if Inferred_enabled {
+		fquery = exclude_inferred + query_head
 	} else {
-		fquery = tag_query_build(q_string)
+		fquery = query_head
 	}
+
+	if meta_query {
+		var iquery string
+		iquery, params = meta_query_build(patterns, groups)
+		fquery += iquery
+	}
+
+	fquery += tag_query_build(q_string, result_limit)
 
 	fmt.Println("fquery")
 	fmt.Println(fquery)
+
+	fmt.Println("params")
+	fmt.Println(params)
 
 	file_rows, err := conn.Query(fquery, params...)
 	if err != sql.ErrNoRows {

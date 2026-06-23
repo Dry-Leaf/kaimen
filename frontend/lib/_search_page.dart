@@ -117,7 +117,14 @@ e.g. matches tags with any or no text,
 followed by _shirt
 
 ignored
-tags were not found for""";
+tags were not found for online
+
+limit:50
+limit results to 50
+
+ignored name:ex limit:50 blue_eyes
+filter on ignored, metadata and tags
+(this order required)""";
   final String meta_documentation = """name:ex
 includes 'ex' in their file name
 
