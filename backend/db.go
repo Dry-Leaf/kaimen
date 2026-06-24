@@ -127,9 +127,11 @@ const (
 
 	query_head = `SELECT f.md5, f.extension, f.file_path FROM files f `
 
+	query_tail = `GROUP BY f.md5 `
+
 	exclude_inferred = `WITH confirmed_file_tags AS (SELECT * FROM file_tags WHERE inferred = 0) `
 
-	ignored_query = `WHERE f.ignore = TRUE `
+	ignored_query = `f.ignore = TRUE `
 
 	query_include = `JOIN %s ft%[2]d ON ft%[2]d.md5 = f.md5 AND ft%[2]d.tag = "%s" `
 
@@ -138,8 +140,6 @@ const (
 	query_exclude = `LEFT JOIN %s fe%[2]d ON fe%[2]d.md5 = f.md5 AND fe%[2]d.tag = "%s" `
 
 	query_exclude_where = `fe%d.md5 IS NULL `
-
-	query_tail = `GROUP BY f.md5 `
 
 	query_limit = `ORDER BY f.rowid DESC LIMIT %s`
 
@@ -520,38 +520,49 @@ func tag_query_build(q_string, result_limit string) string {
 		ft_table = "confirmed_file_tags"
 	}
 
-	if len(tags) == 1 && strings.ToLower(tags[0]) == "ignored" {
-		fquery += ignored_query
-	} else {
-		var exlude_where []string
+	var exlude_where []string
+	var ignored bool
 
-		for i, tag := range tags {
-			tag = strings.ToLower(tag)
-			if len(tag) > 0 {
-				var cq string
-				if ctag, found := strings.CutPrefix(tag, "-"); found {
-					cq = fmt.Sprintf(query_exclude, ft_table, i, ctag)
-					exlude_where = append(exlude_where,
-						fmt.Sprintf(query_exclude_where, ft_table, i))
-				} else {
-					cquery := query_include
-					if strings.Contains(tag, "%") {
-						cquery = query_fuzzy_include
-					}
-					cq = fmt.Sprintf(cquery, ft_table, i, tag)
-				}
-				fquery += cq
+	for i, tag := range tags {
+		tag = strings.ToLower(tag)
+		if len(tag) > 0 {
+			if tag == "ignored" {
+				ignored = true
+				continue
 			}
+			var cq string
+			if ctag, found := strings.CutPrefix(tag, "-"); found {
+				cq = fmt.Sprintf(query_exclude, ft_table, i, ctag)
+				exlude_where = append(exlude_where,
+					fmt.Sprintf(query_exclude_where, i))
+			} else {
+				cquery := query_include
+				if strings.Contains(tag, "%") {
+					cquery = query_fuzzy_include
+				}
+				cq = fmt.Sprintf(cquery, ft_table, i, tag)
+			}
+			fquery += cq
 		}
+	}
 
-		if len(exlude_where) > 0 {
-			fquery += `WHERE `
-			for i, clause := range exlude_where {
-				if i > 0 {
-					fquery += `AND `
-				}
-				fquery += clause
+	if ignored || len(exlude_where) > 0 {
+		fquery += `WHERE `
+	}
+
+	if ignored {
+		fquery += ignored_query
+	}
+
+	if len(exlude_where) > 0 {
+		if ignored {
+			fquery += `AND `
+		}
+		for i, clause := range exlude_where {
+			if i > 0 {
+				fquery += `AND `
 			}
+			fquery += clause
 		}
 	}
 
@@ -663,12 +674,12 @@ func query(q_string string) []string {
 	var groups [][]string
 	var nams, patterns []string
 
-	if g := limit_regex.FindStringSubmatch(q_string); g != nil {
-		result_limit = g[1]
+	if g := limit_regex.FindStringSubmatchIndex(q_string); g != nil {
+		result_limit = q_string[g[2]:g[3]]
 		fmt.Println("POST LIMIT DAIYO")
 		fmt.Println(result_limit)
 
-		q_string = q_string[len(g[0]):]
+		q_string = q_string[0:g[0]] + q_string[g[1]:]
 
 		fmt.Println("rest of query...")
 		fmt.Println(q_string)
@@ -696,9 +707,9 @@ func query(q_string string) []string {
 	}
 
 	if Inferred_enabled {
-		fquery = exclude_inferred + query_head
-	} else {
 		fquery = query_head
+	} else {
+		fquery = exclude_inferred + query_head
 	}
 
 	if meta_query {

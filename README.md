@@ -30,6 +30,7 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 - go
 - Flutter
 - gcc
+- taskfile
 
 ### Linux
 - libfuse-dev
@@ -40,16 +41,6 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 ### Windows compilation
 
 ```powershell
-# adjust according to installation location of WinFSP
-$env:CGO_CFLAGS = "\`"-IC:\Program Files (x86)\WinFsp\inc\fuse\`""
-
-cd backend
-
-go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
-
-cd ../frontend
-
-flutter build windows --release
-
-mv ../backend/kaimen.exe build/windows/x64/runner/Release
+mkdir releases
+task build
 ```

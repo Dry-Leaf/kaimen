@@ -123,8 +123,7 @@ limit:50
 limit results to 50
 
 ignored name:ex limit:50 blue_eyes
-filter on ignored, metadata and tags
-(this order required)""";
+filter on ignored, metadata and tags""";
   final String meta_documentation = """name:ex
 includes 'ex' in their file name
 
