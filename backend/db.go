@@ -788,6 +788,9 @@ func insert_metadata(md5sum string, meta_data map[string]any) {
 		switch property {
 		case "name", "type", "phash":
 			numeric = false
+			if value.(string) == "" {
+				continue
+			}
 		case "duration":
 			numeric = true
 			if value.(float64) == 0 {

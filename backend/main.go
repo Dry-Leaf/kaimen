@@ -10,6 +10,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/gofrs/flock"
 )
 
 var shutdownChan = make(chan struct{})
@@ -52,7 +54,26 @@ func init() {
 	db_uri = fmt.Sprintf(`file:///%s?_foreign_keys=on&cache=private&_synchronous=NORMAL&_journal_mode=WAL`, filepath.ToSlash(db_path))
 }
 
+func lock_check(lock_path string) *flock.Flock {
+	file_lock := flock.New(lock_path)
+
+	locked, err := file_lock.TryLock()
+	if err != nil {
+		log.Fatalf("Error trying to acquire lock: %v", err)
+	}
+	if !locked {
+		// Single-instance violation! Another instance holds the lock.
+		log.Fatalf("Kaimen is already running.")
+		return nil
+	}
+
+	return file_lock
+}
+
 func main() {
+	lock_path := filepath.Join(os.TempDir(), "kaimen.lock")
+	file_lock := lock_check(lock_path)
+
 	exePath, err := os.Executable()
 	Err_check(err)
 	exe_dir = filepath.Dir(exePath)
@@ -76,10 +97,11 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	wg.Go(server)
+
 	wg.Go(inference_worker)
 	wg.Go(dequeue)
 	wg.Go(dequeue_inference)
-	wg.Go(server)
 
 	go open_front()
 	go mount()
@@ -101,4 +123,9 @@ func main() {
 	close(inferQueue)
 
 	wg.Wait()
+
+	defer func() {
+		file_lock.Unlock()
+		os.Remove(lock_path)
+	}()
 }

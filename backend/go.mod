@@ -12,6 +12,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/evanoberholster/imagemeta v1.0.0
 	github.com/gabriel-vasile/mimetype v1.4.13
+	github.com/gofrs/flock v0.13.0
 	github.com/kpfaulkner/jxl-go v0.0.0-20260402212822-28912ada73e7
 	github.com/mattn/go-sqlite3 v1.14.46
 	github.com/opencontainers/selinux v1.15.1
@@ -21,7 +22,6 @@ require (
 	github.com/winfsp/cgofuse v1.6.0
 	github.com/yalue/onnxruntime_go v1.31.0
 	golang.org/x/image v0.43.0
-	golang.org/x/sys v0.46.0
 )
 
 require (
@@ -33,4 +33,5 @@ require (
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
 	golang.org/x/exp v0.0.0-20260611194520-c48552f49976 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 )

@@ -25,6 +25,11 @@ import (
 	"github.com/evanoberholster/imagemeta/meta/xmp"
 )
 
+func is_video(ext string) bool {
+	result := (ext == ".mp4" || ext == ".webm")
+	return result
+}
+
 func get_video_meta(reader *os.File, ext string) float64 {
 	_, err := reader.Seek(0, io.SeekStart)
 	Err_check(err)
@@ -92,14 +97,20 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 	Err_check(err)
 	defer f.Close()
 
-	file_buffer := bytes.NewBuffer(nil)
-	io.Copy(file_buffer, f)
+	var hash string
 
-	img, _, err := image.Decode(file_buffer)
-	Err_check(err)
+	if !is_video(ext) {
 
-	hash, err := gih.PerceptionHash(img)
-	Err_check(err)
+		file_buffer := bytes.NewBuffer(nil)
+		io.Copy(file_buffer, f)
+
+		img, _, err := image.Decode(file_buffer)
+		Err_check(err)
+
+		phash, err := gih.PerceptionHash(img)
+		Err_check(err)
+		hash = phash.ToString()
+	}
 
 	// none of the below will work. everything in found_meta is actually string
 	if complete_meta {
@@ -112,7 +123,8 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 			"width":     width, "height": height,
 			"duration": duration,
 			"type":     ext,
-			"phash":    hash.ToString()}
+			"phash":    hash}
+
 	}
 
 	var timestamp string
@@ -142,17 +154,17 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 				}
 			}
 		} else {
-			if (width == 0 || height == 0) && ext != ".mp4" && ext != ".webm" {
+			if (width == 0 || height == 0) && !is_video(ext) {
 				width, height = get_wh_from_decode(f)
 			}
 		}
 	} else {
-		if (width == 0 || height == 0) && ext != ".mp4" && ext != ".webm" {
+		if (width == 0 || height == 0) && !is_video(ext) {
 			width, height = get_wh_from_decode(f)
 		}
 	}
 
-	if (ext == ".mp4" || ext == ".webm") && duration == 0 {
+	if is_video(ext) && duration == 0 {
 		duration = get_video_meta(f, ext)
 	}
 
@@ -164,5 +176,5 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		"width":     width, "height": height,
 		"duration": duration,
 		"type":     ext,
-		"phash":    hash.ToString()}
+		"phash":    hash}
 }

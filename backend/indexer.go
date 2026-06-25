@@ -269,7 +269,7 @@ func get_tags(md5sum, ext string) ([]string, bool, map[string]string) {
 			complete_meta := true
 			for i, rexp := range meta_regex {
 				//duration irrelevant for non-videos
-				if i == 3 && ext != ".mp4" && ext != ".webm" {
+				if i == 3 && !is_video(ext) {
 					continue
 				}
 				block := rexp.FindStringSubmatch(str_body)

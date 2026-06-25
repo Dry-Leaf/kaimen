@@ -268,6 +268,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func server() {
+	port_path := filepath.Join(os.TempDir(), "kaimen_port")
+
+	defer os.Remove(port_path)
+
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	Err_check(err)
 	defer listener.Close()
@@ -275,11 +279,8 @@ func server() {
 	addr := listener.Addr().(*net.TCPAddr)
 	actualPort := addr.Port
 
-	port_path := filepath.Join(os.TempDir(), "kaimen_port")
 	err = os.WriteFile(port_path, []byte(strconv.Itoa(actualPort)), 0644)
 	Err_check(err)
-
-	defer os.Remove(port_path)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", handle)

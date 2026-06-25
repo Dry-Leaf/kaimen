@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"math"
@@ -79,6 +80,9 @@ func preprocess_image(imagePath string, imageSize int) ([]float32, error) {
 	defer file.Close()
 
 	srcImg, _, err := image.Decode(file)
+	if err == image.ErrFormat {
+		return nil, err
+	}
 	Err_check(err)
 
 	// Resize and Pad (Letterbox) maintaining aspect ratio
@@ -158,6 +162,9 @@ func infer_tags_closure() func(string, string) []string {
 
 	return func(md5sum, path string) []string {
 		imgFlatSlice, err := preprocess_image(path, img_size)
+		if err == image.ErrFormat {
+			return nil
+		}
 		Err_check(err)
 
 		copy(imgInput, imgFlatSlice)
@@ -245,6 +252,13 @@ func inference_worker() {
 		}
 
 		results := infer_tags(md5sum, path)
+		if results == nil {
+			pending_infer.Delete(triplet)
+			fmt.Println("Invalid format:", path)
+			if is_video(ext) {
+				results = []string{"animated"}
+			}
+		}
 		fmt.Println("INFERRED:", path)
 		fmt.Println(results)
 		insert_tags(md5sum, path, ext, results, false, false, true)
