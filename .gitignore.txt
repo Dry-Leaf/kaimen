@@ -2,3 +2,7 @@ releases
 frontend/android
 frontend/ios
 frontend/web
+new-frontend
+*.sh
+quick-sharun
+AppDir

@@ -17,7 +17,7 @@ class _DigitRow extends State<DigitRow> {
 
     if (!_imagesPrecached) {
       for (int i = 0; i <= 9; i++) {
-        precacheImage(AssetImage('counters/$i.png'), context);
+        precacheImage(AssetImage('assets/counters/$i.png'), context);
       }
       _imagesPrecached = true;
     }
@@ -29,7 +29,7 @@ class _DigitRow extends State<DigitRow> {
       mainAxisAlignment: MainAxisAlignment.center,
       children: widget._counter
           .split('')
-          .map((digit) => Image.asset('counters/$digit.png'))
+          .map((digit) => Image.asset('assets/counters/$digit.png'))
           .toList(),
     );
   }

@@ -29,7 +29,7 @@ func Err_check(err error) {
 func open_front() {
 	current := front_open.Load()
 
-	search_exe := filepath.Join(exe_dir, "search.exe")
+	search_exe := filepath.Join(exe_dir, SEARCH_NAME)
 
 	if current {
 		return
@@ -118,7 +118,8 @@ func main() {
 	}
 
 	if host != nil {
-		host.Unmount()
+		un := host.Unmount()
+		log.Print("Unmounted ", un)
 	}
 	close(inferQueue)
 

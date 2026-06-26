@@ -136,7 +136,7 @@ func infer_tags_closure() func(string, string) []string {
 
 	channel_size := img_size * img_size
 
-	local_DLL := filepath.Join(exe_dir, "onnxruntime.dll")
+	local_DLL := filepath.Join(exe_dir, ONNX_LIB)
 	abs_path, _ := filepath.Abs(local_DLL)
 
 	fmt.Println("Forcing DLL from:", abs_path)
@@ -156,7 +156,7 @@ func infer_tags_closure() func(string, string) []string {
 	inputNames := []string{"input"}
 	outputNames := []string{"initial_predictions", "refined_predictions", "selected_candidates"}
 
-	session, err := ort.NewDynamicAdvancedSession(`.\camie-tagger-v2_quantized.onnx`,
+	session, err := ort.NewDynamicAdvancedSession(`camie-tagger-v2_quantized.onnx`,
 		inputNames, outputNames, nil)
 	Err_check(err)
 

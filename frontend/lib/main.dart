@@ -13,11 +13,14 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:fvp/fvp.dart' as fvp;
 
 Future<void> setupTray(ProviderContainer container) async {
-  final iconPath = Platform.isWindows ? 'kaimen.ico' : 'kaimen.png';
+  final iconPath = Platform.isWindows
+      ? 'assets/kaimen.ico'
+      : 'assets/kaimen.png';
 
   await trayManager.setIcon(iconPath);
-  await trayManager.setToolTip('Kaimen');
-
+  if (!Platform.isLinux) {
+    await trayManager.setToolTip('Kaimen');
+  }
   Menu menu = Menu(
     items: [
       MenuItem(key: 'show_results', label: 'Open Search Results'),

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -135,10 +136,15 @@ func (self *KAIMEN_FS) Readdir(path string,
 }
 
 func mount() {
-	search_dir := filepath.Join(exe_dir, "search")
+	search_dir := filepath.Join(exe_dir, "shrine")
 
-	os.RemoveAll(search_dir)
+	if runtime.GOOS == "windows" {
+		os.RemoveAll(search_dir)
+	} else {
+		err := os.MkdirAll(search_dir, os.ModePerm)
+		Err_check(err)
+	}
 	hellofs := &KAIMEN_FS{}
 	host = fuse.NewFileSystemHost(hellofs)
-	host.Mount("search", os.Args[1:])
+	host.Mount("shrine", os.Args[1:])
 }

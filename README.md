@@ -11,7 +11,6 @@
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
 - Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/latest)
-- Download the follwing [onnx model](https://huggingface.co/Camais03/camie-tagger-v2/resolve/main/camie-tagger-v2.onnx) into the same folder that kaimen.exe is located
 
 ### Setup
 Gelbooru requires api credentials to be provided to pull metadata from it. After making an account and logging in, your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
@@ -34,6 +33,9 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 
 ### Linux
 - libfuse-dev
+- cmake
+- ninja
+- ayatana-appindicator3-0.1
 
 ### Windows
 - WinFsp

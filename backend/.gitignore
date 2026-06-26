@@ -1,5 +1,5 @@
 test*
-*.exe
+kaimen*
 *.env
 *.onnx
 tasks.txt
