@@ -25,7 +25,8 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 
 # Building
 
-## Requirments 
+## Requirments
+- git lfs
 - go
 - Flutter
 - gcc
