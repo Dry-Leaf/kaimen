@@ -1,7 +1,6 @@
 test*
 kaimen*
 *.env
-*.onnx
 tasks.txt
 tasks.md
 .tags.db
