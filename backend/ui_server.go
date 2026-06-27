@@ -134,7 +134,8 @@ func update(mode MessageType) {
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
-		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
+		pending_count := pending_create.count.Load() + pending_infer.count.Load()
+		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_count}}
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -179,11 +180,11 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		switch req.Type {
 		case counter:
 			file_count := strconv.Itoa(get_count(file_count))
-			//fmt.Println(file_count)
+
 			indexMu.Lock()
 			keys := slices.Sorted(maps.Keys(indexing))
 			indexMu.Unlock()
-			//fmt.Println(keys)
+
 			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
@@ -193,12 +194,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			to_cursor_body := full_body[:cursor_position]
 
 			lw := strings.Trim(last_word_reg.FindString(to_cursor_body), "- ")
-
-			fmt.Println("LAST WORD")
-			fmt.Println(lw)
-
-			fmt.Println("cursor position!")
-			fmt.Println(req.Value.([]interface{})[1].(float64))
 
 			var results []tag
 			if lw != "" {

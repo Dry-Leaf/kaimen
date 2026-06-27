@@ -52,7 +52,6 @@ func dequeue() {
 			return
 
 		case <-ticker.C:
-			// 3. Your core logic goes here
 			now := time.Now()
 			pending_create.Range(func(key, _ any) bool {
 				path := key.(string)
@@ -68,9 +67,6 @@ func dequeue() {
 				Err_check(err)
 
 				if now.Sub(info.ModTime()) >= interval {
-					// NOTE: Spinning up un-tracked goroutines right at shutdown
-					// can still be cut off. For absolute safety, tracking these with
-					// another WaitGroup is ideal, but fixing the main loop is priority #1.
 					go func(p string) {
 						md5sum := process(p, mtype.Extension(), info)
 						pending_create.Delete(p)
@@ -114,7 +110,6 @@ func dir_watch(dir string) {
 		ei := <-c
 
 		if _, loaded := watch_kill.LoadAndDelete(dir); loaded {
-			//fmt.Printf("%s deleted\n", dir)
 			break
 		}
 

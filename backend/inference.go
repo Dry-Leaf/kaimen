@@ -247,13 +247,12 @@ func inference_worker() {
 	for triplet := range inferQueue {
 		md5sum, path, ext := triplet[0], triplet[1], triplet[2]
 		if _, err := os.Stat(path); err != nil {
-			pending_infer.Delete(triplet)
+			update(counter)
 			continue
 		}
 
 		results := infer_tags(md5sum, path)
 		if results == nil {
-			pending_infer.Delete(triplet)
 			fmt.Println("Invalid format:", path)
 			if is_video(ext) {
 				results = []string{"animated"}
@@ -262,8 +261,7 @@ func inference_worker() {
 		fmt.Println("INFERRED:", path)
 		fmt.Println(results)
 		insert_tags(md5sum, path, ext, results, false, false, true)
-
-		pending_infer.Delete(triplet)
+		update(counter)
 	}
 }
 
@@ -282,6 +280,7 @@ func dequeue_inference() {
 				path := key.([3]string)
 				select {
 				case inferQueue <- path:
+					pending_infer.Delete(path)
 				default:
 					fmt.Println("Inference queue is full!")
 				}
