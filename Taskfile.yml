@@ -77,6 +77,12 @@ tasks:
       - mkdir -p {{.RELEASE_DIR_LINUX}}
       - rsync -a build/linux/x64/release/bundle/ {{.RELEASE_DIR_LINUX}}/
 
+  build-linux:
+    desc: Build both backend and frontend
+    cmds:
+      - task: build-backend-linux
+      - task: build-frontend-linux
+
   # Internal helper task to remove copy-paste duplication
   _copy-backend-assets:
     internal: true
