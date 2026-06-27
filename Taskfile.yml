@@ -2,7 +2,7 @@ version: "3"
 
 vars:
   RELEASE_DIR_WIN: "../releases/Kaimen"
-  RELEASE_DIR_LINUX: ../dist/AppDir
+  RELEASE_DIR_LINUX: "../dist/AppDir"
   CGO_WIN: '-IC:\PROGRA~2\WinFsp\inc\fuse'
   ONNX_LIB_WIN: "onnxruntime.dll"
   ONNX_LIB_LINUX: "libonnxruntime.so.1.26.0"
@@ -63,7 +63,7 @@ tasks:
       - task: _copy-backend-assets
         vars:
           {
-            TARGET: "{{.RELEASE_DIR_LINUX}}/bin",
+            TARGET: "{{.RELEASE_DIR_LINUX}}",
             ONNX: "{{.ONNX_LIB_LINUX}}",
             EXT: "",
           }
@@ -76,7 +76,6 @@ tasks:
       - flutter build linux --release
       - mkdir -p {{.RELEASE_DIR_LINUX}}
       - rsync -a build/linux/x64/release/bundle/ {{.RELEASE_DIR_LINUX}}/
-      - mv {{.RELEASE_DIR_LINUX}}/search {{.RELEASE_DIR_LINUX}}/bin
 
   build-linux:
     desc: Build both backend and frontend
