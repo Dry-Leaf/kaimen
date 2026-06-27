@@ -1,0 +1,16 @@
+[Desktop Entry]
+
+Type=Application
+
+Version=1.0
+
+Name=Kaimen
+
+Comment=Local Image Booru
+
+Exec=kaimen
+
+Terminal=false
+
+Categories=Graphics;Utility;
+
