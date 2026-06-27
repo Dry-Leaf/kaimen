@@ -149,8 +149,8 @@ class _UIState extends State<UI> with WindowListener {
 
         return PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          //transitionDuration: Duration.zero,
-          //reverseTransitionDuration: Duration.zero,
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
         );
       },
     );

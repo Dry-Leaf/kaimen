@@ -71,8 +71,6 @@ func lock_check(lock_path string) *flock.Flock {
 }
 
 func main() {
-	timeDilation = 2;
-
 	lock_path := filepath.Join(os.TempDir(), "kaimen.lock")
 	file_lock := lock_check(lock_path)
 
@@ -109,8 +107,6 @@ func main() {
 	go mount()
 
 	<-shutdownChan
-
-	log.Print("MARKER")
 
 	if httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Millisecond)
