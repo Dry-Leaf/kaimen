@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -39,27 +41,59 @@ class ResultCounter extends ConsumerStatefulWidget {
 }
 
 class _ResultCounterState extends ConsumerState<ResultCounter> {
+  double _opacity = 1.0;
+  Timer? _timer;
+
+  String? _lastKey;
+
+  void _startFade(String key) {
+    if (_lastKey == key) return;
+    _lastKey = key;
+
+    _timer?.cancel();
+
+    const duration = Duration(seconds: 2);
+    const tick = Duration(milliseconds: 16); // ~60fps
+
+    final startTime = DateTime.now();
+
+    _timer = Timer.periodic(tick, (timer) {
+      final elapsed = DateTime.now().difference(startTime);
+      final t = elapsed.inMilliseconds / duration.inMilliseconds;
+      final eased = Curves.ease.transform(t.clamp(0.0, 1.0));
+
+      if (t >= 1.0) {
+        setState(() => _opacity = 0.0);
+        timer.cancel();
+        return;
+      }
+
+      setState(() {
+        _opacity = 1.0 - eased;
+      });
+    });
+  }
+
   @override
-  void initState() {
-    super.initState();
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final resultCounter = ref.watch(messageByTypeProvider(Message.qcomplete));
+    final resultCounter =
+        ref.watch(messageByTypeProvider(Message.qcomplete));
 
     return resultCounter.when(
-      loading: () => SizedBox.shrink(),
+      loading: () => const SizedBox.shrink(),
       error: (err, _) => Text('Error: $err'),
       data: (msg) {
-        return TweenAnimationBuilder<double>(
-          key: ValueKey(msg[1]),
-          tween: Tween<double>(begin: 1.0, end: 0.0),
-          curve: Curves.ease,
-          duration: const Duration(seconds: 2),
-          builder: (BuildContext context, double opacity, Widget? child) {
-            return Opacity(opacity: opacity, child: Text("${msg[0]} Results"));
-          },
+        _startFade(msg[1].toString());
+
+        return Opacity(
+          opacity: _opacity,
+          child: Text("${msg[0]} Results"),
         );
       },
     );

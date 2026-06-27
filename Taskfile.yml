@@ -2,7 +2,7 @@ version: "3"
 
 vars:
   RELEASE_DIR_WIN: "../releases/Kaimen"
-  RELEASE_DIR_LINUX: "/usr/Kaimen"
+  RELEASE_DIR_LINUX: "~/bin/Kaimen"
   CGO_WIN: '-IC:\PROGRA~2\WinFsp\inc\fuse'
   ONNX_LIB_WIN: "onnxruntime.dll"
   ONNX_LIB_LINUX: "libonnxruntime.so.1.26.0"

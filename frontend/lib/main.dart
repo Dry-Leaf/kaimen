@@ -25,6 +25,8 @@ Future<void> setupTray(ProviderContainer container) async {
     items: [
       MenuItem(key: 'show_results', label: 'Open Search Results'),
       MenuItem.separator(),
+      MenuItem(key: 'open_window', label: 'Open Window'),
+      MenuItem.separator(),
       MenuItem(key: 'exit_app', label: 'Exit App'),
     ],
   );
@@ -59,6 +61,8 @@ class MyTrayListener extends TrayListener {
       connAsync.whenData((c) {
         c.send(Message.openresults, '');
       });
+    } else if (menuItem.key == 'open_window') {
+      windowManager.show();
     } else if (menuItem.key == 'exit_app') {
       final connAsync = container.read(connProvider);
 
@@ -71,6 +75,7 @@ class MyTrayListener extends TrayListener {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await windowManager.ensureInitialized();
   await windowManager.setPreventClose(true);
 
@@ -144,8 +149,8 @@ class _UIState extends State<UI> with WindowListener {
 
         return PageRouteBuilder(
           pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionDuration: Duration.zero,
-          reverseTransitionDuration: Duration.zero,
+          //transitionDuration: Duration.zero,
+          //reverseTransitionDuration: Duration.zero,
         );
       },
     );

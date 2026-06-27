@@ -289,6 +289,5 @@ func server() {
 		Handler: mux,
 	}
 
-	err = httpServer.Serve(listener)
-	log.Fatal(err)
+	httpServer.Serve(listener)
 }
