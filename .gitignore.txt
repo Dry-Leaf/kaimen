@@ -6,3 +6,4 @@ new-frontend
 *.sh
 quick-sharun
 AppDir
+dist

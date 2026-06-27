@@ -6,7 +6,7 @@ SHARUN="https://raw.githubusercontent.com/pkgforge-dev/Anylinux-AppImages/refs/h
 
 # Configure the AppImage
 export ICON=kaimen.png
-export DESKTOP=/usr/share/applications/kaimen.desktop
+export DESKTOP=kaimen.desktop
 export OUTPATH=./dist
 export OUTNAME=Kaimen.AppImage
 
@@ -15,7 +15,7 @@ wget "$SHARUN" -O ./quick-sharun
 chmod +x ./quick-sharun
 
 # Bundle the application
-./quick-sharun ~/bin/Kaimen
+./quick-sharun ./dist/AppDir
 
 # Create the AppImage
 ./quick-sharun --make-appimage

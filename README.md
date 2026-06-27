@@ -31,6 +31,7 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 - Flutter
 - gcc
 - taskfile
+- patchelf
 
 ### Linux
 - libfuse-dev
