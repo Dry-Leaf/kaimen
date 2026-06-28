@@ -6,6 +6,10 @@
 
 # Installation
 
+### Linux
+
+- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.0)
+
 ### Windows
 
 - Install [WinFSP](https://winfsp.dev/rel/)
