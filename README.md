@@ -31,13 +31,13 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 - Flutter
 - gcc
 - taskfile
-- patchelf
 
 ### Linux
 - libfuse-dev
 - cmake
 - ninja
-- ayatana-appindicator3-0.1
+- ayatana-appindicator3-0.1 development
+- patchelf
 
 ### Windows
 - WinFsp
@@ -45,6 +45,11 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 ### Windows compilation
 
 ```powershell
-mkdir releases
 task build
+```
+
+### Linux compilation
+
+```bash
+task build-linux
 ```
