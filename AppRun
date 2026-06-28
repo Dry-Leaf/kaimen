@@ -1,0 +1,9 @@
+#!/bin/sh
+# Get the absolute path to the directory containing this AppRun script
+SELF=$(dirname "$(readlink -f "$0")")
+
+# Tell the system linker to look in this directory for your .so files first
+export LD_LIBRARY_PATH="$SELF:$LD_LIBRARY_PATH"
+
+# Execute your binary, forwarding all arguments
+exec "$SELF/kaimen" "$@"

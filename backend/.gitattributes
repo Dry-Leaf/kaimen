@@ -1,1 +1,2 @@
 *.onnx filter=lfs diff=lfs merge=lfs -text
+camie-tagger-v2_quantized.onnx filter=lfs diff=lfs merge=lfs -text

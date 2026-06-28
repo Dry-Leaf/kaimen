@@ -77,11 +77,19 @@ tasks:
       - mkdir -p {{.RELEASE_DIR_LINUX}}
       - rsync -a build/linux/x64/release/bundle/ {{.RELEASE_DIR_LINUX}}/
 
+  appimage-cpy:
+    dir: .
+    cmds:
+      - cp AppRun dist/AppDir
+      - cp kaimen.desktop dist/AppDir
+      - cp kaimen.png dist/AppDir
+
   build-linux:
     desc: Build both backend and frontend
     cmds:
       - task: build-backend-linux
       - task: build-frontend-linux
+      - task: appimage-cpy
 
   # Internal helper task to remove copy-paste duplication
   _copy-backend-assets:

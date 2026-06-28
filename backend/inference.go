@@ -125,7 +125,8 @@ func preprocess_image(imagePath string, imageSize int) ([]float32, error) {
 }
 
 func infer_tags_closure() func(string, string) []string {
-	json_path := filepath.Join(exe_dir,"camie-tagger-v2-metadata.json")
+	json_path := filepath.Join(exe_dir, "camie-tagger-v2-metadata.json")
+
 	dat, err := os.ReadFile(json_path)
 	Err_check(err)
 
@@ -137,11 +138,10 @@ func infer_tags_closure() func(string, string) []string {
 
 	channel_size := img_size * img_size
 
-	local_DLL := filepath.Join(exe_dir, ONNX_LIB)
-	abs_path, _ := filepath.Abs(local_DLL)
+	local_DLL := filepath.Clean(filepath.Join(exe_dir, ONNX_LIB))
 
-	fmt.Println("Forcing DLL from:", abs_path)
-	ort.SetSharedLibraryPath(abs_path)
+	fmt.Println("Forcing DLL from:", local_DLL)
+	ort.SetSharedLibraryPath(local_DLL)
 
 	err = ort.InitializeEnvironment()
 	Err_check(err)
@@ -157,7 +157,8 @@ func infer_tags_closure() func(string, string) []string {
 	inputNames := []string{"input"}
 	outputNames := []string{"initial_predictions", "refined_predictions", "selected_candidates"}
 
-	onnx_path := filepath.Join(exe_dir,"camie-tagger-v2_quantized.onnx")
+	onnx_path := filepath.Join(exe_dir, "camie-tagger-v2_quantized.onnx")
+
 	session, err := ort.NewDynamicAdvancedSession(onnx_path,
 		inputNames, outputNames, nil)
 	Err_check(err)
@@ -241,7 +242,7 @@ func infer_tags_closure() func(string, string) []string {
 	}
 }
 
-var infer_tags = infer_tags_closure()
+var infer_tags func(string, string) []string
 
 var inferQueue = make(chan [3]string, 100)
 

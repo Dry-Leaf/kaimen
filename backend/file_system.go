@@ -135,16 +135,28 @@ func (self *KAIMEN_FS) Readdir(path string,
 	return 0
 }
 
+var shrine_loc string
+var result_loc string
+
 func mount() {
-	search_dir := filepath.Join(exe_dir, "shrine")
+	mount_dir := exe_dir
+
+	if owd := os.Getenv("OWD"); owd != "" {
+		mount_dir = owd
+	}
+
+	shrine_loc = filepath.Join(mount_dir, "shrine")
+	result_loc = filepath.Join(shrine_loc, "results")
 
 	if runtime.GOOS == "windows" {
-		os.RemoveAll(search_dir)
+		os.RemoveAll(shrine_loc)
 	} else {
-		err := os.MkdirAll(search_dir, os.ModePerm)
+		os.Remove(shrine_loc)
+		err := os.MkdirAll(shrine_loc, 0755)
 		Err_check(err)
 	}
+
 	hellofs := &KAIMEN_FS{}
 	host = fuse.NewFileSystemHost(hellofs)
-	host.Mount("shrine", os.Args[1:])
+	host.Mount(shrine_loc, os.Args[1:])
 }

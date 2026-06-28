@@ -103,7 +103,7 @@ func Open_and_select(path string) error {
 
 func Open_search_result(path string) {
 	if path == "" {
-		err := browser.OpenFile("shrine/results")
+		err := browser.OpenFile(result_loc)
 		Err_check(err)
 	} else {
 		err := Open_and_select(path)

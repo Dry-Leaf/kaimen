@@ -7,3 +7,4 @@ new-frontend
 quick-sharun
 AppDir
 dist
+*.AppImage

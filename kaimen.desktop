@@ -3,7 +3,5 @@ Type=Application
 Version=1.0
 Name=Kaimen
 Comment=Local Image Booru
-Exec=kaimen
 Icon=kaimen
-Terminal=false
 Categories=Utility;

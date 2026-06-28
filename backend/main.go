@@ -14,12 +14,12 @@ import (
 	"github.com/gofrs/flock"
 )
 
+var exe_dir string
+
 var shutdownChan = make(chan struct{})
 
 var front_open atomic.Bool
 var db_creation atomic.Bool
-
-var exe_dir string
 
 func Err_check(err error) {
 	if err != nil {
@@ -30,13 +30,13 @@ func Err_check(err error) {
 func open_front() {
 	current := front_open.Load()
 
-	search_exe := filepath.Join(exe_dir, SEARCH_NAME)
-
 	if current {
 		return
 	} else {
 		if front_open.CompareAndSwap(current, true) {
-			cmd := exec.Command(search_exe)
+			binary_path := filepath.Join(exe_dir, "search")
+
+			cmd := exec.Command(binary_path)
 			err := cmd.Start()
 			Err_check(err)
 		}
@@ -72,14 +72,29 @@ func lock_check(lock_path string) *flock.Flock {
 }
 
 func main() {
+	exePath, err := os.Executable()
+	Err_check(err)
+
+	exe_dir = filepath.Dir(exePath)
+	if appDir := os.Getenv("APPDIR"); appDir != "" {
+		exe_dir = appDir
+	}
+
+	infer_tags = infer_tags_closure()
+
 	lock_path := filepath.Join(os.TempDir(), "kaimen.lock")
 	file_lock := lock_check(lock_path)
 
-	exePath, err := os.Executable()
+	base_log_dir, err := os.UserCacheDir()
 	Err_check(err)
-	exe_dir = filepath.Dir(exePath)
 
-	file, err := os.OpenFile("error.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	appLogDir := filepath.Join(base_log_dir, "kaimen")
+	err = os.MkdirAll(appLogDir, 0755) // Safely creates the folder if it doesn't exist
+	Err_check(err)
+
+	logPath := filepath.Join(appLogDir, "output.log")
+
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	Err_check(err)
 	defer file.Close()
 
