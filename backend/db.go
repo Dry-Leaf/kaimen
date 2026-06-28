@@ -847,6 +847,8 @@ func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignore
 }
 
 func new_db() {
+	db_creation.Store(true)
+
 	file, err := os.Create(db_path)
 	Err_check(err)
 
@@ -875,4 +877,6 @@ func new_db() {
 	Err_check(err)
 
 	tx.Commit()
+
+	db_creation.Store(false)
 }

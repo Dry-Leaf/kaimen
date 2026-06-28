@@ -82,8 +82,7 @@ class _ResultCounterState extends ConsumerState<ResultCounter> {
 
   @override
   Widget build(BuildContext context) {
-    final resultCounter =
-        ref.watch(messageByTypeProvider(Message.qcomplete));
+    final resultCounter = ref.watch(messageByTypeProvider(Message.qcomplete));
 
     return resultCounter.when(
       loading: () => const SizedBox.shrink(),
@@ -91,10 +90,7 @@ class _ResultCounterState extends ConsumerState<ResultCounter> {
       data: (msg) {
         _startFade(msg[1].toString());
 
-        return Opacity(
-          opacity: _opacity,
-          child: Text("${msg[0]} Results"),
-        );
+        return Opacity(opacity: _opacity, child: Text("${msg[0]} Results"));
       },
     );
   }
@@ -189,7 +185,7 @@ valid units: d(days), w(weeks), mo(months), y(years)""";
 
 class _SearchPageState extends ConsumerState<SearchPage> {
   late final Conn conn;
-  String _counter = "0";
+  int _counter = 0;
 
   @override
   void initState() {
@@ -279,65 +275,82 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         error: (err, _) => Text('Error: $err'),
         data: (msg) {
           _counter = msg[0];
-          debugPrint(_counter);
-          return Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: <Widget>[
-                    SizedBox(width: 550, child: SearchBox()),
-                    SizedBox(height: 40),
-                    SizedBox(height: 150, child: DigitRow(_counter.toString())),
-                    SizedBox(height: 60),
-                  ],
-                ),
-                Align(
-                  alignment: Alignment.topCenter,
-                  child: Transform.translate(
-                    offset: const Offset(0, 180),
-                    child: ResultCounter(),
-                  ),
-                ),
-                if (msg[1] != null)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Transform.translate(
-                      offset: const Offset(0, -16),
-                      child: SizedBox(
-                        height: 120,
-                        child: IndexingBox(indexingList: msg[1].cast<String>()),
+          if (_counter == -1) {
+            return Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Database creation in progress"),
+                  SizedBox(width: 8),
+                  SpinKitThreeBounce(color: Colors.grey, size: 10.0),
+                ],
+              ),
+            );
+          } else {
+            return Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      SizedBox(width: 550, child: SearchBox()),
+                      SizedBox(height: 40),
+                      SizedBox(
+                        height: 150,
+                        child: DigitRow(_counter.toString()),
                       ),
+                      SizedBox(height: 60),
+                    ],
+                  ),
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Transform.translate(
+                      offset: const Offset(0, 180),
+                      child: ResultCounter(),
                     ),
                   ),
-                if (!msg[2])
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Transform.translate(
-                      offset: const Offset(0, -16),
-                      child: SizedBox(
-                        height: 120,
-                        child: Text(
-                          "No directories being watched. Add one in the settings.",
+                  if (msg[1] != null)
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Transform.translate(
+                        offset: const Offset(0, -16),
+                        child: SizedBox(
+                          height: 120,
+                          child: IndexingBox(
+                            indexingList: msg[1].cast<String>(),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                if (msg[1] == null && msg[3] != null && msg[3] != 0)
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Transform.translate(
-                      offset: const Offset(0, -16),
-                      child: SizedBox(
-                        height: 120,
-                        child: QueueNotif(queueSize: msg[3]),
+                  if (!msg[2])
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Transform.translate(
+                        offset: const Offset(0, -16),
+                        child: SizedBox(
+                          height: 120,
+                          child: Text(
+                            "No directories being watched. Add one in the settings.",
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            ),
-          );
+                  if (msg[1] == null && msg[3] != null && msg[3] != 0)
+                    Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Transform.translate(
+                        offset: const Offset(0, -16),
+                        child: SizedBox(
+                          height: 120,
+                          child: QueueNotif(queueSize: msg[3]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          }
         },
       ),
     );

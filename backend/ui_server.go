@@ -130,12 +130,13 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
-		file_count := strconv.Itoa(get_count(file_count))
+		file_count := get_count(file_count)
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
 		pending_count := pending_create.count.Load() + pending_infer.count.Load()
 		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_count}}
+		fmt.Println(resp)
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -179,15 +180,23 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 		switch req.Type {
 		case counter:
-			file_count := strconv.Itoa(get_count(file_count))
+			current := db_creation.Load()
 
-			indexMu.Lock()
-			keys := slices.Sorted(maps.Keys(indexing))
-			indexMu.Unlock()
+			if current {
+				resp := message{Type: counter, Value: []interface{}{-1, []string{}, true, 0}}
+				err := wsjson.Write(ctx, c, resp)
+				Err_check(err)
+			} else {
+				file_count := get_count(file_count)
 
-			resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
-			err := wsjson.Write(ctx, c, resp)
-			Err_check(err)
+				indexMu.Lock()
+				keys := slices.Sorted(maps.Keys(indexing))
+				indexMu.Unlock()
+
+				resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
+				err := wsjson.Write(ctx, c, resp)
+				Err_check(err)
+			}
 		case autosuggest:
 			full_body := req.Value.([]interface{})[0].(string)
 			cursor_position := int(req.Value.([]interface{})[1].(float64))

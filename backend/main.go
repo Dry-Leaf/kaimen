@@ -17,6 +17,7 @@ import (
 var shutdownChan = make(chan struct{})
 
 var front_open atomic.Bool
+var db_creation atomic.Bool
 
 var exe_dir string
 
@@ -85,25 +86,31 @@ func main() {
 	log.SetOutput(file)
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
-	if _, err := os.Stat(db_path); err != nil {
-		new_db()
-	}
-
 	Read_conf()
-	Make_Conns()
-
-	indexing = make(map[string]bool)
-	initial_crawl()
 
 	var wg sync.WaitGroup
 
 	wg.Go(server)
 
+	go open_front()
+
+	if _, err := os.Stat(db_path); err != nil {
+		fmt.Println("Creating NEW DB")
+		new_db()
+		Make_Conns()
+		fmt.Println("DONE")
+		update(counter)
+	} else {
+		Make_Conns()
+	}
+
+	indexing = make(map[string]bool)
+	initial_crawl()
+
 	wg.Go(inference_worker)
 	wg.Go(dequeue)
 	wg.Go(dequeue_inference)
 
-	go open_front()
 	go mount()
 
 	<-shutdownChan
