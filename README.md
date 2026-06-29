@@ -24,6 +24,7 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 # Advantages over Hydrus Network
 - Minimal setup
 - Familiar UI
+- Built in [tag inference](https://huggingface.co/Camais03/camie-tagger-v2)
 - Works with file managers
 - Does not require its own copy of files
 
