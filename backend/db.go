@@ -341,6 +341,9 @@ func ignore_check(md5sum string) int {
 }
 
 func dup_check(md5sum, path string) int {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -367,6 +370,9 @@ func dup_check(md5sum, path string) int {
 }
 
 func delete_file(path string) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -576,6 +582,9 @@ func tag_query_build(q_string, result_limit string) string {
 }
 
 func Edit_tag(name string, category float64) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -592,6 +601,9 @@ func Edit_tag(name string, category float64) {
 }
 
 func Delete_tag(name string) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -644,6 +656,9 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 }
 
 func overwrite_tags(t_string string) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -773,6 +788,9 @@ func query_recent() []string {
 }
 
 func insert_metadata(md5sum string, meta_data map[string]any) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()
@@ -811,6 +829,9 @@ func insert_metadata(md5sum string, meta_data map[string]any) {
 }
 
 func insert_tags(md5sum, path, ext string, tags []string, to_ignore, prev_ignored, inferred bool) {
+	writeMu.Lock()
+	defer writeMu.Unlock()
+
 	conn, err := sql.Open("sqlite3", db_uri)
 	Err_check(err)
 	defer conn.Close()

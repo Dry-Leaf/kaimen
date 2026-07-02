@@ -144,8 +144,6 @@ func process(path, ext string, info os.FileInfo) string {
 		md5sum = fmt.Sprintf("%x", h.Sum(nil))
 	}
 
-	writeMu.Lock()
-	defer writeMu.Unlock()
 	// check db if file is ignored
 	prev_ignored := ignore_check(md5sum) > 0
 	if Ignore_enabled {
