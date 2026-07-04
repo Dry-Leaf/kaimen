@@ -3,12 +3,11 @@ package main
 import (
 	"fmt"
 	"io"
-	"net/http"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/winfsp/cgofuse/fuse"
@@ -28,8 +27,6 @@ var initial_query = true
 
 type KAIMEN_FS struct {
 	fuse.FileSystemBase
-	cacheMu   sync.RWMutex
-	fileCache map[string][]byte
 }
 
 func copyFusestatFromHydrusMeta(stat *fuse.Stat_t, hmd hydrus_metadata) {
@@ -121,33 +118,28 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 	_, filename := filepath.Split(path)
 
 	if strings.HasPrefix(filename, "hydrus") {
-		fileData, cached := self.fileCache[filename]
+		fileData, cached := hydrus_conn.fileCache[filename]
 
 		if !cached {
 			hd_id := hd_result_map[filename]
 			request_url := hy_address + fmt.Sprintf(get_file, hd_id) + hy_access_param
 
-			resp := hydrus_conn.get_resp(request_url)
-			if resp == nil {
-				return -int(fuse.ENOENT)
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode != http.StatusOK {
-				return -int(fuse.ENOENT)
-			}
-
-			fileData, err := io.ReadAll(resp.Body)
+			fileData, err := hydrus_conn.get_bytes(request_url)
 			if err != nil {
-				return int(fuse.EIO)
+				log.Printf("Hydrus fetch failed: %v", err)
+
+				if strings.Contains(err.Error(), "404") {
+					return -int(fuse.ENOENT)
+				}
+				return -int(fuse.EIO)
 			}
 
-			self.cacheMu.Lock()
-			if self.fileCache == nil {
-				self.fileCache = make(map[string][]byte)
+			hydrus_conn.cacheMu.Lock()
+			if hydrus_conn.fileCache == nil {
+				hydrus_conn.fileCache = make(map[string][]byte)
 			}
-			self.fileCache[filename] = fileData
-			self.cacheMu.Unlock()
+			hydrus_conn.fileCache[filename] = fileData
+			hydrus_conn.cacheMu.Unlock()
 		}
 
 		if ofst >= int64(len(fileData)) {
@@ -222,13 +214,13 @@ func (self *KAIMEN_FS) Release(path string, fh uint64) (errc int) {
 	_, filename := filepath.Split(path)
 
 	if strings.HasPrefix(filename, "hydrus") {
-		self.cacheMu.Lock()
+		hydrus_conn.cacheMu.Lock()
 
-		if _, exists := self.fileCache[filename]; exists {
-			delete(self.fileCache, filename)
+		if _, exists := hydrus_conn.fileCache[filename]; exists {
+			delete(hydrus_conn.fileCache, filename)
 		}
 
-		self.cacheMu.Unlock()
+		hydrus_conn.cacheMu.Unlock()
 	}
 
 	return 0
@@ -255,8 +247,7 @@ func mount() {
 		Err_check(err)
 	}
 
-	hellofs := &KAIMEN_FS{
-		fileCache: make(map[string][]byte)}
+	hellofs := &KAIMEN_FS{}
 	host = fuse.NewFileSystemHost(hellofs)
 	host.Mount(shrine_loc, os.Args[1:])
 }

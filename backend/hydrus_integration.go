@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
+	"time"
 )
 
 var hydrus_enabled = true
@@ -43,43 +46,91 @@ var hy_meta = [3]string{"width", "height", "duration"}
 
 type Hydrus_conn struct {
 	httpClient *http.Client
+	fileCache  map[string][]byte
+	cacheMu    sync.RWMutex
 }
 
-var hydrus_conn Hydrus_conn
+var hydrus_conn *Hydrus_conn
 
-func (hyc *Hydrus_conn) get_resp(request_url string) *http.Response {
-	req, err := http.NewRequest("GET", request_url, nil)
-	Err_check(err)
+func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response, func(), error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid request: %w", err)
+	}
 
 	resp, err := hyc.httpClient.Do(req)
 	if err != nil {
-		log.Printf("Network request failed: %v", err)
-		return nil
+		return nil, nil, fmt.Errorf("network error: %w", err)
 	}
-	return resp
+
+	cleanup := func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		cleanup()
+		return nil, nil, fmt.Errorf("bad status: %d", resp.StatusCode)
+	}
+
+	return resp, cleanup, nil
+}
+
+func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	resp, cleanup, err := hyc.do_get(ctx, request_url)
+	if err != nil {
+		return nil, err
+	}
+	defer cleanup()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read body: %w", err)
+	}
+
+	cancel()
+	return data, nil
+}
+
+func (hyc *Hydrus_conn) get_json(request_url string, target interface{}) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	resp, cleanup, err := hyc.do_get(ctx, request_url)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	if err := json.NewDecoder(resp.Body).Decode(target); err != nil {
+		return fmt.Errorf("failed to decode json: %w", err)
+	}
+
+	cancel()
+	return nil
 }
 
 func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
+	if len(file_ids) == 0 {
+		return []string{}
+	}
 	idjson, err := json.Marshal(file_ids)
+	Err_check(err)
 
 	params := url.QueryEscape(string(idjson))
 	request_url := hy_address + fmt.Sprintf(get_meta_data, params) + hy_access_param
 
-	id_resp := hyc.get_resp(request_url)
-	if id_resp == nil {
+	var metadata_results hydrus_metadata_results
+
+	if err := hyc.get_json(request_url, &metadata_results); err != nil {
+		log.Printf("Failed to fetch metadata: %v", err)
 		return []string{}
 	}
-	defer id_resp.Body.Close()
-	body, err := io.ReadAll(id_resp.Body)
-	Err_check(err)
 
 	var file_names []string
-
-	var metadata_results hydrus_metadata_results
-	err = json.Unmarshal(body, &metadata_results)
-	Err_check(err)
-
-	fmt.Println(metadata_results)
 
 	for _, md := range metadata_results.Metadata {
 		mirror_name := fmt.Sprintf("hydrus_%d%s", md.File_id, md.Ext)
@@ -102,17 +153,12 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 
 	//fmt.Println(request_url)
 
-	resp := hyc.get_resp(request_url)
-	if resp == nil {
+	var id_results hydrus_id_results
+
+	if err := hyc.get_json(request_url, &id_results); err != nil {
+		log.Printf("Failed to fetch metadata: %v", err)
 		return []int{}
 	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	Err_check(err)
-
-	var id_results hydrus_id_results
-	err = json.Unmarshal(body, &id_results)
-	Err_check(err)
 
 	return id_results.File_ids
 }

@@ -49,6 +49,17 @@ func onExit() {
 }
 
 func init() {
+	hydrus_conn = &Hydrus_conn{
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				MaxIdleConns:        100,
+				MaxIdleConnsPerHost: 100,
+				IdleConnTimeout:     90 * time.Second,
+			},
+		},
+		fileCache: make(map[string][]byte),
+	}
+
 	home, err := os.UserHomeDir()
 	Err_check(err)
 	db_path = filepath.Join(home, ".booru.db")
@@ -103,14 +114,6 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	Read_conf()
-
-	hydrus_conn = Hydrus_conn{httpClient: &http.Client{
-		Transport: &http.Transport{
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-			IdleConnTimeout:     90 * time.Second,
-		},
-	}}
 
 	var wg sync.WaitGroup
 

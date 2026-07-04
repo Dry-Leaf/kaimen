@@ -264,6 +264,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			editignore, editinferred, newdirectory, deletedirectory:
 			Edit_conf(req.Type, req.Value)
 		case openresults:
+			fmt.Println("open result case")
 			value := req.Value.(string)
 			Open_search_result(value)
 		case edittag:
