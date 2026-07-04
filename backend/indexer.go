@@ -95,9 +95,7 @@ func index(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}
-			fmt.Println("about to process ", path)
 			process(path, mtype.Extension(), info)
-			fmt.Println("finished processing ", path)
 		}
 	}
 

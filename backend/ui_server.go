@@ -142,7 +142,6 @@ func update(mode MessageType) {
 		indexMu.Unlock()
 		pending_count := pending_create.count.Load() + pending_infer.count.Load()
 		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_count}}
-		fmt.Println("update resp ", resp)
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -228,7 +227,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case userquery:
 			value := req.Value.(string)
 			if len(value) > 0 {
-				nams = []string{".", ".."} //append([]string{".", ".."}, query(value)...)
+				nams = append([]string{".", ".."}, query(value)...) //[]string{".", ".."}
 				if hydrus_enabled {
 					hy_nams = hydrus_conn.query(value)
 				}

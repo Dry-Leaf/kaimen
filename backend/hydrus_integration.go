@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-var hydrus_enabled = true
+var hydrus_enabled = false
 
 var hy_address = "http://127.0.0.1:45869"
 
@@ -61,7 +61,7 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 
 	resp, err := hyc.httpClient.Do(req)
 	if err != nil {
-		log.Fatal("network error: %w", err)
+		return nil, nil, fmt.Errorf("network error: %w", err)
 	}
 
 	cleanup := func() {
