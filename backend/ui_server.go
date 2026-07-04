@@ -196,6 +196,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				file_count := get_count(file_count)
 
 				if hydrus_enabled {
+					fmt.Println("responding to counter with hydrus enabled")
 					file_count += hydrus_conn.get_count("system:everything")
 				}
 
@@ -208,6 +209,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				Err_check(err)
 			}
 		case autosuggest:
+			fmt.Println("autosuggest m1")
 			full_body := req.Value.([]interface{})[0].(string)
 			cursor_position := int(req.Value.([]interface{})[1].(float64))
 			to_cursor_body := full_body[:cursor_position]
@@ -216,6 +218,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			var results []tag
 			if lw != "" {
+				fmt.Println("autosuggest m2")
 				results = get_suggestions(lw, req.Value.([]interface{})[2].(float64), req.Value.([]interface{})[3].(float64))
 			}
 			resp := message{Type: autosuggest, Value: results}

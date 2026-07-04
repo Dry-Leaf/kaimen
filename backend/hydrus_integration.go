@@ -53,6 +53,7 @@ type Hydrus_conn struct {
 var hydrus_conn *Hydrus_conn
 
 func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response, func(), error) {
+	fmt.Println("making a hydrus request ", url)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid request: %w", err)
@@ -60,7 +61,7 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 
 	resp, err := hyc.httpClient.Do(req)
 	if err != nil {
-		return nil, nil, fmt.Errorf("network error: %w", err)
+		log.Fatal("network error: %w", err)
 	}
 
 	cleanup := func() {
@@ -77,7 +78,7 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 }
 
 func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	resp, cleanup, err := hyc.do_get(ctx, request_url)

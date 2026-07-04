@@ -416,6 +416,10 @@ func get_suggestions(query string, min, limit float64) []tag {
 
 	tag_query_stmt := stmts[tag_query]
 
+	if hydrus_enabled {
+		min = 0
+	}
+
 	rows, err := tag_query_stmt.Query(query, min, limit)
 	Err_check(err)
 	defer rows.Close()
@@ -427,7 +431,9 @@ func get_suggestions(query string, min, limit float64) []tag {
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
 
 		if hydrus_enabled {
-			ctag.Freq += hydrus_conn.get_count(ctag.Name)
+			amount := hydrus_conn.get_count(ctag.Name)
+			fmt.Println("amount ", amount)
+			ctag.Freq += amount
 		}
 
 		rem := ctag.Name[len(query):]
