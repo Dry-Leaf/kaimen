@@ -102,6 +102,7 @@ func Open_and_select(path string) error {
 }
 
 func Open_search_result(path string) {
+	fmt.Println("trying to open results")
 	if path == "" {
 		err := browser.OpenFile(result_loc)
 		Err_check(err)
@@ -131,12 +132,17 @@ func update(mode MessageType) {
 	switch mode {
 	case counter:
 		file_count := get_count(file_count)
+
+		if hydrus_enabled {
+			file_count += hydrus_conn.get_count("system:everything")
+		}
+
 		indexMu.Lock()
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
 		pending_count := pending_create.count.Load() + pending_infer.count.Load()
 		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_count}}
-		fmt.Println(resp)
+		fmt.Println("update resp ", resp)
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -189,6 +195,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				file_count := get_count(file_count)
 
+				if hydrus_enabled {
+					file_count += hydrus_conn.get_count("system:everything")
+				}
+
 				indexMu.Lock()
 				keys := slices.Sorted(maps.Keys(indexing))
 				indexMu.Unlock()
@@ -215,13 +225,25 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case userquery:
 			value := req.Value.(string)
 			if len(value) > 0 {
-				nams = append([]string{".", ".."}, query(value)...)
+				nams = []string{".", ".."} //append([]string{".", ".."}, query(value)...)
+				if hydrus_enabled {
+					hy_nams = hydrus_conn.query(value)
+				}
 				initial_query = false
 			} else {
 				nams = append([]string{".", ".."}, query_recent()...)
+				if hydrus_enabled {
+					hy_nams = hydrus_conn.query_recent()
+				}
+				initial_query = false
 			}
 
-			resp := message{Type: qcomplete, Value: []int{len(nams) - 2, rand.IntN(10000)}}
+			result_count := len(nams)
+			if hydrus_enabled {
+				result_count += len(hy_nams)
+			}
+
+			resp := message{Type: qcomplete, Value: []int{result_count - 2, rand.IntN(10000)}}
 			wsjson.Write(ctx, c, resp)
 		case getconf:
 			conf := gather_conf()

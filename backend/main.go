@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -102,6 +103,14 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
 
 	Read_conf()
+
+	hydrus_conn = Hydrus_conn{httpClient: &http.Client{
+		Transport: &http.Transport{
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+			IdleConnTimeout:     90 * time.Second,
+		},
+	}}
 
 	var wg sync.WaitGroup
 

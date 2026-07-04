@@ -141,7 +141,7 @@ tagged with blonde hair and blue eyes
 -blonde_hair -blue_eyes
 tagged with blonde hair or blue eyes
 
-%_shirt
+*_shirt
 Wildcard search
 e.g. matches tags with any or no text,
 followed by _shirt

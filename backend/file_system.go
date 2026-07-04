@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/winfsp/cgofuse/fuse"
 )
@@ -14,12 +19,31 @@ var host *fuse.FileSystemHost
 const root = `C:\Users\nobody\Documents\code\compiled\go\kaimen\test\`
 
 var result_map = make(map[string]string)
+var hd_result_map = make(map[string]int)
+var hd_meta_map = make(map[string]hydrus_metadata)
 var nams []string
+var hy_nams []string
 var search_nam = []string{".", "..", "results"}
 var initial_query = true
 
 type KAIMEN_FS struct {
 	fuse.FileSystemBase
+	cacheMu   sync.RWMutex
+	fileCache map[string][]byte
+}
+
+func copyFusestatFromHydrusMeta(stat *fuse.Stat_t, hmd hydrus_metadata) {
+	stat.Mode = 0666
+	stat.Mode |= fuse.S_IFREG
+	stat.Size = hmd.Size
+	stat.Nlink = 1
+	t := time.Unix(hmd.Time_modified, 0)
+	stat.Mtim.Sec = t.Unix()
+	stat.Mtim.Nsec = int64(t.Nanosecond())
+	stat.Atim.Sec = t.Unix()
+	stat.Atim.Nsec = int64(t.Nanosecond())
+	stat.Ctim.Sec = t.Unix()
+	stat.Ctim.Nsec = int64(t.Nanosecond())
 }
 
 func copyFusestatFromFileInfo(stat *fuse.Stat_t, info os.FileInfo) {
@@ -68,44 +92,92 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		stat.Mode = fuse.S_IFDIR | 0555
 		return 0
 	default:
-		var info os.FileInfo
 		var err error
 
 		_, filename := filepath.Split(path)
-		real_path := result_map[filename]
+		if strings.HasPrefix(filename, "hydrus") {
+			info := hd_meta_map[filename]
+			copyFusestatFromHydrusMeta(stat, info)
+		} else {
+			var info os.FileInfo
+			real_path := result_map[filename]
 
-		info, err = os.Stat(real_path)
-		if err != nil {
-			if os.IsNotExist(err) {
-				//fmt.Println("PATH DOES NOT EXIST:")
-				//fmt.Println(real_path)
-				delete_file(real_path)
-				return -int(fuse.ENOENT)
+			info, err = os.Stat(real_path)
+			if err != nil {
+				if os.IsNotExist(err) {
+					delete_file(real_path)
+					return -int(fuse.ENOENT)
+				}
+				Err_check(err)
 			}
-			Err_check(err)
+			copyFusestatFromFileInfo(stat, info)
 		}
 
-		copyFusestatFromFileInfo(stat, info)
 		return 0
 	}
 }
 
 func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n int) {
 	_, filename := filepath.Split(path)
-	real_path := result_map[filename]
 
-	file, err := os.Open(real_path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return -int(fuse.ENOENT)
+	if strings.HasPrefix(filename, "hydrus") {
+		fileData, cached := self.fileCache[filename]
+
+		if !cached {
+			hd_id := hd_result_map[filename]
+			request_url := hy_address + fmt.Sprintf(get_file, hd_id) + hy_access_param
+
+			resp := hydrus_conn.get_resp(request_url)
+			if resp == nil {
+				return -int(fuse.ENOENT)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return -int(fuse.ENOENT)
+			}
+
+			fileData, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return int(fuse.EIO)
+			}
+
+			self.cacheMu.Lock()
+			if self.fileCache == nil {
+				self.fileCache = make(map[string][]byte)
+			}
+			self.fileCache[filename] = fileData
+			self.cacheMu.Unlock()
 		}
-		Err_check(err)
-	}
-	defer file.Close()
 
-	n, err = file.ReadAt(buff, ofst)
-	if err != nil && err != io.EOF {
-		return int(fuse.EIO)
+		if ofst >= int64(len(fileData)) {
+			return 0
+		}
+
+		end := ofst + int64(len(buff))
+		if end > int64(len(fileData)) {
+			end = int64(len(fileData))
+		}
+
+		n = copy(buff, fileData[ofst:end])
+		return n
+
+	} else {
+		real_path := result_map[filename]
+
+		file, err := os.Open(real_path)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return -int(fuse.ENOENT)
+			}
+			Err_check(err)
+		}
+		defer file.Close()
+
+		n, err = file.ReadAt(buff, ofst)
+		if err != nil && err != io.EOF {
+			return int(fuse.EIO)
+		}
 	}
 
 	return n
@@ -117,19 +189,46 @@ func (self *KAIMEN_FS) Readdir(path string,
 	fh uint64) (errc int) {
 
 	var namp *[]string
+	var hnamp *[]string
 
 	if path != "/results" {
 		namp = &search_nam
 	} else {
 		if initial_query {
 			nams = append([]string{".", ".."}, query_recent()...)
+			if hydrus_enabled {
+				hy_nams = hydrus_conn.query_recent()
+			}
 		}
 		namp = &nams
+		hnamp = &hy_nams
 	}
 
 	// cnams = append([]string{".", ".."}, cnams...)
 	for _, name := range *namp {
 		fill(name, nil, 0)
+	}
+
+	if hydrus_enabled {
+		for _, name := range *hnamp {
+			fill(name, nil, 0)
+		}
+	}
+
+	return 0
+}
+
+func (self *KAIMEN_FS) Release(path string, fh uint64) (errc int) {
+	_, filename := filepath.Split(path)
+
+	if strings.HasPrefix(filename, "hydrus") {
+		self.cacheMu.Lock()
+
+		if _, exists := self.fileCache[filename]; exists {
+			delete(self.fileCache, filename)
+		}
+
+		self.cacheMu.Unlock()
 	}
 
 	return 0
@@ -156,7 +255,8 @@ func mount() {
 		Err_check(err)
 	}
 
-	hellofs := &KAIMEN_FS{}
+	hellofs := &KAIMEN_FS{
+		fileCache: make(map[string][]byte)}
 	host = fuse.NewFileSystemHost(hellofs)
 	host.Mount(shrine_loc, os.Args[1:])
 }

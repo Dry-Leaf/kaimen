@@ -426,6 +426,10 @@ func get_suggestions(query string, min, limit float64) []tag {
 		var ctag tag
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
 
+		if hydrus_enabled {
+			ctag.Freq += hydrus_conn.get_count(ctag.Name)
+		}
+
 		rem := ctag.Name[len(query):]
 		ctag.Remainder = rem
 
@@ -641,7 +645,7 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 
 		if freq == 0 {
 			if category == 0 {
-				//fmt.Printf("new tag %s\n", tag)
+				fmt.Printf("new tag %s\n", tag)
 				cat := get_tag_cat(tag)
 				if cat != 0 {
 					update_tag_stmt.Exec(cat, tag)
@@ -688,6 +692,8 @@ func query(q_string string) []string {
 	var fquery, result_limit string
 	var groups [][]string
 	var nams, patterns []string
+
+	q_string = strings.Replace(q_string, "*", "%", -1)
 
 	if g := limit_regex.FindStringSubmatchIndex(q_string); g != nil {
 		result_limit = q_string[g[2]:g[3]]

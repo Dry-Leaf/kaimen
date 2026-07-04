@@ -7,6 +7,13 @@ INFERRED_ENABLED = true
 # Comma seperated directories to index
 DIRS = [ ]
 
+[hydrus]
+
+    ENABLED = false
+
+    ADDRESS = 'http://127.0.0.1:45869'
+
+
 # Add account credentials if need be (ToDo: document this)
 [[boards]]
 

@@ -73,6 +73,7 @@ func crawl(dir string) {
 	delete(indexing, dir)
 	indexMu.Unlock()
 
+	fmt.Println("about to update counter")
 	update(counter)
 
 	dir_watch(dir)
@@ -94,7 +95,9 @@ func index(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}
+			fmt.Println("about to process ", path)
 			process(path, mtype.Extension(), info)
+			fmt.Println("finished processing ", path)
 		}
 	}
 
