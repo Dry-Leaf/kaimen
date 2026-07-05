@@ -83,6 +83,7 @@ func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
 
 	resp, cleanup, err := hyc.do_get(ctx, request_url)
 	if err != nil {
+		log.Print("get_bytes failure")
 		return nil, err
 	}
 	defer cleanup()
@@ -92,7 +93,6 @@ func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read body: %w", err)
 	}
 
-	cancel()
 	return data, nil
 }
 
@@ -102,6 +102,7 @@ func (hyc *Hydrus_conn) get_json(request_url string, target interface{}) error {
 
 	resp, cleanup, err := hyc.do_get(ctx, request_url)
 	if err != nil {
+		log.Print("get_json failure")
 		return err
 	}
 	defer cleanup()
@@ -110,7 +111,6 @@ func (hyc *Hydrus_conn) get_json(request_url string, target interface{}) error {
 		return fmt.Errorf("failed to decode json: %w", err)
 	}
 
-	cancel()
 	return nil
 }
 
@@ -157,8 +157,8 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 	var id_results hydrus_id_results
 
 	if err := hyc.get_json(request_url, &id_results); err != nil {
-		log.Printf("Failed to fetch metadata: %v", err)
-		return []int{}
+		log.Printf("Failed to fetch ids: %v", err)
+		return make([]int, 0)
 	}
 
 	return id_results.File_ids

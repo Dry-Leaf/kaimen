@@ -8,6 +8,7 @@ import '_directory_tab.dart' show DirectoryTab;
 import '_misc_tab.dart' show MiscTab;
 import '_source_tab.dart' show SourcesTab;
 import '_tags_tab.dart' show TagsTab;
+import '_hydrus_tab.dart' show HydrusTab;
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -42,6 +43,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               Tab(text: "Directories"),
               Tab(text: "Sources"),
               Tab(text: "Tags"),
+              Tab(text: "Hydrus"),
               Tab(text: "Misc"),
             ],
           ),
@@ -70,7 +72,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ],
         ),
         body: TabBarView(
-          children: [DirectoryTab(), SourcesTab(), TagsTab(), MiscTab()],
+          children: [
+            DirectoryTab(),
+            SourcesTab(),
+            TagsTab(),
+            HydrusTab(),
+            MiscTab(),
+          ],
         ),
       ),
     );

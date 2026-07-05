@@ -70,7 +70,9 @@ func dequeue() {
 					go func(p string) {
 						md5sum := process(p, mtype.Extension(), info)
 						pending_create.Delete(p)
-						pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
+						if md5sum != "" {
+							pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
+						}
 						update(counter)
 					}(path)
 				}
