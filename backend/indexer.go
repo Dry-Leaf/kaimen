@@ -73,7 +73,6 @@ func crawl(dir string) {
 	delete(indexing, dir)
 	indexMu.Unlock()
 
-	fmt.Println("about to update counter")
 	update(counter)
 
 	dir_watch(dir)

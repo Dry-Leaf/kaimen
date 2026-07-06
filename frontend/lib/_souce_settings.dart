@@ -53,12 +53,6 @@ class _SourceSettingsState extends ConsumerState<SourceSettings> {
                 labelText: 'Login',
                 border: OutlineInputBorder(),
               ),
-              validator: (String? value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter some text';
-                }
-                return null;
-              },
               onSaved: (v) => widget.board["LOGIN"] = v,
             ),
             TextFormField(
@@ -67,12 +61,6 @@ class _SourceSettingsState extends ConsumerState<SourceSettings> {
                 labelText: 'API Key',
                 border: OutlineInputBorder(),
               ),
-              validator: (String? value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter some text';
-                }
-                return null;
-              },
               onSaved: (v) => widget.board["API_KEY"] = v,
             ),
             TextFormField(
@@ -124,8 +112,12 @@ class _SourceSettingsState extends ConsumerState<SourceSettings> {
                 children: [
                   ElevatedButton(
                     onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        _formKey.currentState!.save();
+                      } else {
+                        return;
+                      }
                       Navigator.of(context, rootNavigator: true).pop('dialog');
-                      _formKey.currentState!.save();
                       try {
                         widget.conn.send(widget.mode, widget.board);
                       } catch (e) {

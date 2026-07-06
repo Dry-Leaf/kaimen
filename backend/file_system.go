@@ -122,7 +122,7 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 
 		if !cached {
 			hd_id := hd_result_map[filename]
-			request_url := hy_address + fmt.Sprintf(get_file, hd_id) + hy_access_param
+			request_url := Hydrus_conf.URL + fmt.Sprintf(get_file, hd_id) + hy_access + Hydrus_conf.ACCESS_KEY
 
 			fileData, err := hydrus_conn.get_bytes(request_url)
 			if err != nil {
@@ -193,7 +193,7 @@ func (self *KAIMEN_FS) Readdir(path string,
 	} else {
 		if initial_query {
 			nams = append([]string{".", ".."}, query_recent()...)
-			if hydrus_enabled {
+			if Hydrus_conf.ENABLED {
 				hy_nams = hydrus_conn.query_recent()
 			}
 		}
@@ -206,7 +206,7 @@ func (self *KAIMEN_FS) Readdir(path string,
 		fill(name, nil, 0)
 	}
 
-	if hydrus_enabled {
+	if Hydrus_conf.ENABLED {
 		for _, name := range *hnamp {
 			fill(name, nil, 0)
 		}

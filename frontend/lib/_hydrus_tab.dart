@@ -15,6 +15,9 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
   late final Conn conn;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  var hydrusForm = {'URL': "", 'ACCESS_KEY': "", "ENABLED": false};
+  bool? _hydrusCheck;
+
   @override
   void initState() {
     super.initState();
@@ -33,12 +36,28 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
       messageByTypeProvider(Message.getconf),
     );
 
+    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
+      next.whenData((status) {
+        final String msg;
+        if (status[0]) {
+          msg = "Changes successfully saved.";
+        } else {
+          msg = "Invalid input. Changes Discarded.";
+        }
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(content: Text(msg)),
+        );
+      });
+    });
+
     return config.when(
       loading: () => const CircularProgressIndicator(),
       error: (err, stack) => Text('Error: $err'),
       data: (config) {
-        bool hydrusCheck = false; //config['Hydrus_enabled'];
-
+        _hydrusCheck ??= config['Hydrus_conf']['ENABLED'];
+        String hydrusURL = config['Hydrus_conf']['URL'];
+        String hydrusAK = config['Hydrus_conf']['ACCESS_KEY'];
         return Scaffold(
           body: Center(
             child: SizedBox(
@@ -46,18 +65,22 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
               child: Form(
                 key: _formKey,
                 child: Column(
+                  spacing: 16.0,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     CheckboxListTile(
-                      value: hydrusCheck,
+                      value: _hydrusCheck,
                       onChanged: (bool? value) {
-                        hydrusCheck = !hydrusCheck;
+                        setState(() {
+                          _hydrusCheck = value ?? false;
+                          hydrusForm["ENABLED"] = value ?? false;
+                        });
                       },
                       title: const Text("Hydrus Enabled"),
                     ),
                     TextFormField(
-                      initialValue: "http://127.0.0.1:45869",
+                      initialValue: hydrusURL,
                       decoration: const InputDecoration(
                         labelText: 'URL',
                         border: OutlineInputBorder(),
@@ -68,9 +91,10 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
                         }
                         return null;
                       },
-                      onSaved: (v) => {},
+                      onSaved: (v) => hydrusForm["URL"] = v ?? "",
                     ),
                     TextFormField(
+                      initialValue: hydrusAK,
                       decoration: const InputDecoration(
                         labelText: 'Access Key',
                         border: OutlineInputBorder(),
@@ -81,7 +105,7 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
                         }
                         return null;
                       },
-                      onSaved: (v) => {},
+                      onSaved: (v) => hydrusForm["ACCESS_KEY"] = v ?? "",
                     ),
                   ],
                 ),
@@ -90,16 +114,14 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
-              Map<String, String> newBoard = {
-                'NAME': "",
-                'URL': "",
-                'API_PARAMS': "",
-                'TAG_KEY': "",
-                'API_KEY': "",
-                'LOGIN': "",
-              };
+              if (_formKey.currentState!.validate()) {
+                _formKey.currentState!.save();
+              } else {
+                return;
+              }
+
               try {
-                conn.send(Message.createsource, newBoard);
+                conn.send(Message.edithydrus, hydrusForm);
               } catch (e) {
                 debugPrint('Failed to encode/send message: $e');
                 ScaffoldMessenger.of(

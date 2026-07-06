@@ -13,18 +13,13 @@ import (
 	"time"
 )
 
-var hydrus_enabled = false
-
-var hy_address = "http://127.0.0.1:45869"
-
-var hy_access_key = "82e8c0ada9db46b485098226efa9ebc0472348fb21ce92c8d8df50718f03633c"
-var hy_access_param = `&Hydrus-Client-API-Access-Key=` + hy_access_key
-
 const (
 	search_files  = `/get_files/search_files?tags=%s`
 	get_file      = `/get_files/file?file_id=%d`
 	get_meta_data = `/get_files/file_metadata?file_ids=%s`
 	sort_order    = `&file_sort_asc=false`
+	hy_access     = `&Hydrus-Client-API-Access-Key=`
+	client_info   = `/client_info?`
 )
 
 type hydrus_id_results struct {
@@ -51,6 +46,37 @@ type Hydrus_conn struct {
 }
 
 var hydrus_conn *Hydrus_conn
+
+// do this on startup and before opening directory
+func (hyc *Hydrus_conn) validate(hydrus_edit HYDRUS_CONF) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	request_url := hydrus_edit.URL + client_info + hy_access + hydrus_edit.ACCESS_KEY
+
+	req, err := http.NewRequestWithContext(ctx, "GET", request_url, nil)
+	if err != nil {
+		return false
+	}
+
+	resp, err := hyc.httpClient.Do(req)
+	if err != nil {
+		return false
+	}
+
+	cleanup := func() {
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Println("invalid credentials")
+		cleanup()
+		return false
+	}
+
+	return true
+}
 
 func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response, func(), error) {
 	fmt.Println("making a hydrus request ", url)
@@ -122,7 +148,7 @@ func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
 	Err_check(err)
 
 	params := url.QueryEscape(string(idjson))
-	request_url := hy_address + fmt.Sprintf(get_meta_data, params) + hy_access_param
+	request_url := Hydrus_conf.URL + fmt.Sprintf(get_meta_data, params) + hy_access + Hydrus_conf.ACCESS_KEY
 
 	var metadata_results hydrus_metadata_results
 
@@ -150,7 +176,7 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 	Err_check(err)
 
 	params := url.QueryEscape(string(tjson))
-	request_url := hy_address + fmt.Sprintf(search_files, params) + hy_access_param + sort_order
+	request_url := Hydrus_conf.URL + fmt.Sprintf(search_files, params) + hy_access + Hydrus_conf.ACCESS_KEY + sort_order
 
 	//fmt.Println(request_url)
 

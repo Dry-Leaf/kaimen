@@ -35,7 +35,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Widget build(BuildContext context) {
     return DefaultTabController(
       animationDuration: Duration.zero,
-      length: 3,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           bottom: const TabBar(

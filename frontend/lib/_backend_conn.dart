@@ -26,6 +26,7 @@ enum Message {
   editdirectory,
   edittag,
   deletetag,
+  edithydrus,
   getconf,
   gettags,
   sendtags,

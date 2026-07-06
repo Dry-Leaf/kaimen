@@ -416,7 +416,7 @@ func get_suggestions(query string, min, limit float64) []tag {
 
 	tag_query_stmt := stmts[tag_query]
 
-	if hydrus_enabled {
+	if Hydrus_conf.ENABLED {
 		min = 0
 	}
 
@@ -430,7 +430,7 @@ func get_suggestions(query string, min, limit float64) []tag {
 		var ctag tag
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
 
-		if hydrus_enabled {
+		if Hydrus_conf.ENABLED {
 			amount := hydrus_conn.get_count(ctag.Name)
 			fmt.Println("amount ", amount)
 			ctag.Freq += amount

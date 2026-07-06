@@ -11,7 +11,9 @@ DIRS = [ ]
 
     ENABLED = false
 
-    ADDRESS = 'http://127.0.0.1:45869'
+    URL = 'http://127.0.0.1:45869'
+
+    ACCESS_KEY = ''
 
 
 # Add account credentials if need be (ToDo: document this)

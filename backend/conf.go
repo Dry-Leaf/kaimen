@@ -15,10 +15,11 @@ import (
 )
 
 type Config struct {
-	Boards           []SOURCE `toml:"boards"`
-	Inferred_enabled bool     `toml:"INFERRED_ENABLED"`
-	Ignore_enabled   bool     `toml:"IGNORE_ENABLED"`
-	Dirs             []string `toml:"DIRS"`
+	Boards           []SOURCE    `toml:"boards"`
+	Hydrus_conf      HYDRUS_CONF `toml:"hydrus"`
+	Inferred_enabled bool        `toml:"INFERRED_ENABLED"`
+	Ignore_enabled   bool        `toml:"IGNORE_ENABLED"`
+	Dirs             []string    `toml:"DIRS"`
 }
 
 type SOURCE struct {
@@ -32,12 +33,19 @@ type SOURCE struct {
 	API_KEY    string
 }
 
+type HYDRUS_CONF struct {
+	ENABLED    bool
+	URL        string
+	ACCESS_KEY string
+}
+
 //go:embed config.toml
 //go:embed insert_tags.sql.gz
 var embedFS embed.FS
 
 var (
 	Sources          []SOURCE
+	Hydrus_conf      HYDRUS_CONF
 	Dirs             []string
 	confMu           sync.Mutex
 	ustatus          bool
@@ -46,7 +54,8 @@ var (
 )
 
 func gather_conf() Config {
-	return Config{Boards: Sources, Dirs: Dirs, Ignore_enabled: Ignore_enabled, Inferred_enabled: Inferred_enabled}
+	return Config{Boards: Sources, Hydrus_conf: Hydrus_conf, Dirs: Dirs,
+		Ignore_enabled: Ignore_enabled, Inferred_enabled: Inferred_enabled}
 }
 
 func validate_source(booru SOURCE) bool {
@@ -79,6 +88,7 @@ func api_qs_form(booru *SOURCE) {
 func Source_process(conf Config) {
 	Dirs = conf.Dirs
 	Sources = conf.Boards
+	Hydrus_conf = conf.Hydrus_conf
 	Ignore_enabled = conf.Ignore_enabled
 	Inferred_enabled = conf.Inferred_enabled
 
@@ -199,6 +209,24 @@ func Edit_conf(mode MessageType, data any) {
 
 		watch_kill.Store(dir, struct{}{})
 		update(counter)
+	case edithydrus:
+		defer update(updatestatus)
+		cast_data := data.(map[string]interface{})
+
+		hydrus_edit := HYDRUS_CONF{ENABLED: cast_data["ENABLED"].(bool), URL: cast_data["URL"].(string),
+			ACCESS_KEY: cast_data["ACCESS_KEY"].(string)}
+
+		fmt.Println("HYDRUS EDIT")
+		fmt.Println(hydrus_edit)
+
+		result := hydrus_conn.validate(hydrus_edit)
+		if result {
+			ustatus = true
+			conf.Hydrus_conf = hydrus_edit
+		} else {
+			ustatus = false
+			return
+		}
 	}
 
 	buf := new(bytes.Buffer)

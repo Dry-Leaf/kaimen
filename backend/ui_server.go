@@ -44,6 +44,7 @@ const (
 	editdirectory
 	edittag
 	deletetag
+	edithydrus
 	getconf
 	gettags
 	sendtags
@@ -133,7 +134,7 @@ func update(mode MessageType) {
 	case counter:
 		file_count := get_count(file_count)
 
-		if hydrus_enabled {
+		if Hydrus_conf.ENABLED {
 			file_count += hydrus_conn.get_count("system:everything")
 		}
 
@@ -194,7 +195,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			} else {
 				file_count := get_count(file_count)
 
-				if hydrus_enabled {
+				if Hydrus_conf.ENABLED {
 					fmt.Println("responding to counter with hydrus enabled")
 					file_count += hydrus_conn.get_count("system:everything")
 				}
@@ -228,20 +229,20 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			value := req.Value.(string)
 			if len(value) > 0 {
 				nams = append([]string{".", ".."}, query(value)...) //[]string{".", ".."}
-				if hydrus_enabled {
+				if Hydrus_conf.ENABLED {
 					hy_nams = hydrus_conn.query(value)
 				}
 				initial_query = false
 			} else {
 				nams = append([]string{".", ".."}, query_recent()...)
-				if hydrus_enabled {
+				if Hydrus_conf.ENABLED {
 					hy_nams = hydrus_conn.query_recent()
 				}
 				initial_query = false
 			}
 
 			result_count := len(nams)
-			if hydrus_enabled {
+			if Hydrus_conf.ENABLED {
 				result_count += len(hy_nams)
 			}
 
@@ -262,8 +263,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			if len(value) > 0 {
 				overwrite_tags(value)
 			}
-		case createsource, editsource, deletesource, reordersources,
-			editignore, editinferred, newdirectory, deletedirectory:
+		case createsource, editsource, deletesource, reordersources, editignore,
+			editinferred, newdirectory, deletedirectory, edithydrus:
 			Edit_conf(req.Type, req.Value)
 		case openresults:
 			fmt.Println("open result case")
