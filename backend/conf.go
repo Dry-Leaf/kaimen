@@ -231,7 +231,11 @@ func Edit_conf(mode MessageType, data any) {
 		fmt.Println("HYDRUS EDIT")
 		fmt.Println(hydrus_edit)
 
-		result := hydrus_conn.validate(hydrus_edit)
+		result := true
+
+		if hydrus_edit.ENABLED {
+			result = hydrus_conn.validate(hydrus_edit)
+		}
 		if result {
 			ustatus = true
 			conf.Hydrus_conf = hydrus_edit
