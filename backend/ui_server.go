@@ -143,7 +143,16 @@ func update(mode MessageType) {
 		keys := slices.Sorted(maps.Keys(indexing))
 		indexMu.Unlock()
 		pending_count := pending_create.count.Load() + pending_infer.count.Load()
-		resp = message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_count}}
+
+		var dir_length int
+
+		if Hydrus_conf.ENABLED {
+			dir_length = 1
+		} else {
+			dir_length = len(Dirs)
+		}
+
+		resp = message{Type: counter, Value: []interface{}{file_count, keys, dir_length > 0, pending_count}}
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -204,7 +213,15 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				keys := slices.Sorted(maps.Keys(indexing))
 				indexMu.Unlock()
 
-				resp := message{Type: counter, Value: []interface{}{file_count, keys, len(Dirs) > 0, pending_create.count.Load()}}
+				var dir_length int
+
+				if Hydrus_conf.ENABLED {
+					dir_length = 1
+				} else {
+					dir_length = len(Dirs)
+				}
+
+				resp := message{Type: counter, Value: []interface{}{file_count, keys, dir_length > 0, pending_create.count.Load()}}
 				err := wsjson.Write(ctx, c, resp)
 				Err_check(err)
 

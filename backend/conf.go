@@ -221,6 +221,7 @@ func Edit_conf(mode MessageType, data any) {
 		watch_kill.Store(dir, struct{}{})
 		update(counter)
 	case edithydrus:
+		defer update(counter)
 		defer update(updatestatus)
 		cast_data := data.(map[string]interface{})
 
