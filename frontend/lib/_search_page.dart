@@ -347,7 +347,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                         child: SizedBox(
                           height: 120,
                           child: Text(
-                            "No directories being watched. Add one in the settings.",
+                            "No directories being watched. In the settings, either add one, or enable Hydrus integration.",
                           ),
                         ),
                       ),
