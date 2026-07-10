@@ -200,6 +200,22 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       next.whenData((c) => c.send(Message.counter, ''));
     });
 
+    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
+      next.whenData((status) {
+        final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? false;
+        if (!isCurrentRoute) return;
+
+        if (!status[0]) {
+          final String msg;
+          msg = "Hydrus connection failed. Integration has been disabled.";
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(content: Text(msg)),
+          );
+        }
+      });
+    });
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(

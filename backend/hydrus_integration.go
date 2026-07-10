@@ -79,7 +79,6 @@ func (hyc *Hydrus_conn) validate(hydrus_edit HYDRUS_CONF) bool {
 }
 
 func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response, func(), error) {
-	fmt.Println("making a hydrus request ", url)
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid request: %w", err)
@@ -87,6 +86,8 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 
 	resp, err := hyc.httpClient.Do(req)
 	if err != nil {
+		Hydrus_conf.ENABLED = false
+		ustatus = false
 		return nil, nil, fmt.Errorf("network error: %w", err)
 	}
 
@@ -172,6 +173,14 @@ func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
 }
 
 func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
+	fmt.Println("collecting hydrus ids")
+	hydrus_conn.cacheMu.Lock()
+	if len(hydrus_conn.fileCache) > 50 {
+		fmt.Println("clearing hydrus file cache")
+		clear(hydrus_conn.fileCache)
+	}
+	hydrus_conn.cacheMu.Unlock()
+
 	tjson, err := json.Marshal(tags)
 	Err_check(err)
 

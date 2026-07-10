@@ -121,6 +121,7 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 		fileData, cached := hydrus_conn.fileCache[filename]
 
 		if !cached {
+			fmt.Println(path, " not in hydrus cache")
 			hd_id := hd_result_map[filename]
 			request_url := Hydrus_conf.URL + fmt.Sprintf(get_file, hd_id) + hy_access + Hydrus_conf.ACCESS_KEY
 
@@ -140,9 +141,6 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 			}
 
 			hydrus_conn.cacheMu.Lock()
-			if hydrus_conn.fileCache == nil {
-				hydrus_conn.fileCache = make(map[string][]byte)
-			}
 			hydrus_conn.fileCache[filename] = fileData
 			hydrus_conn.cacheMu.Unlock()
 		}
@@ -210,22 +208,6 @@ func (self *KAIMEN_FS) Readdir(path string,
 		for _, name := range *hnamp {
 			fill(name, nil, 0)
 		}
-	}
-
-	return 0
-}
-
-func (self *KAIMEN_FS) Release(path string, fh uint64) (errc int) {
-	_, filename := filepath.Split(path)
-
-	if strings.HasPrefix(filename, "hydrus") {
-		hydrus_conn.cacheMu.Lock()
-
-		if _, exists := hydrus_conn.fileCache[filename]; exists {
-			delete(hydrus_conn.fileCache, filename)
-		}
-
-		hydrus_conn.cacheMu.Unlock()
 	}
 
 	return 0

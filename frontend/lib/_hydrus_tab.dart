@@ -43,6 +43,9 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
           msg = "Changes successfully saved.";
         } else {
           msg = "Invalid input. Changes Discarded.";
+          setState(() {
+            _hydrusCheck = false;
+          });
         }
         showDialog(
           context: context,

@@ -432,7 +432,6 @@ func get_suggestions(query string, min, limit float64) []tag {
 
 		if Hydrus_conf.ENABLED {
 			amount := hydrus_conn.get_count(ctag.Name)
-			fmt.Println("amount ", amount)
 			ctag.Freq += amount
 		}
 

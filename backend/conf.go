@@ -86,9 +86,20 @@ func api_qs_form(booru *SOURCE) {
 }
 
 func Source_process(conf Config) {
+	ustatus = true
+
 	Dirs = conf.Dirs
 	Sources = conf.Boards
 	Hydrus_conf = conf.Hydrus_conf
+
+	if Hydrus_conf.ENABLED {
+		result := hydrus_conn.validate(Hydrus_conf)
+		if !result {
+			Hydrus_conf.ENABLED = false
+			ustatus = false
+		}
+	}
+
 	Ignore_enabled = conf.Ignore_enabled
 	Inferred_enabled = conf.Inferred_enabled
 
@@ -276,4 +287,5 @@ func Read_conf() {
 	// for _, booru := range Sources {
 	// 	fmt.Println(booru)
 	// }
+	//
 }
