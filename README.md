@@ -24,6 +24,7 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 ### Hydrus Integration
 
 Set up the Hydrus client api service and insert its URL and api access key into Kaimen's setting.
+<img width="2142" height="738" alt="hydrus_setting_demo" src="https://github.com/user-attachments/assets/87bfed48-8790-4673-a1be-f24fdc3b87f5" />
 
 # Advantages over Hydrus Network
 `Note: Kaimen can also be used as a front-end for Hydrus`
