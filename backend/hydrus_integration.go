@@ -87,7 +87,8 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 	resp, err := hyc.httpClient.Do(req)
 	if err != nil {
 		Hydrus_conf.ENABLED = false
-		ustatus = false
+		usuccess = false
+		ustatus = "Hydrus connection failed. Integration has been disabled."
 
 		clear(hy_nams)
 		hydrus_conn.cacheMu.Lock()

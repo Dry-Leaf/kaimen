@@ -14,6 +14,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const (
+	conf_success = "Changes successfully saved."
+)
+
 type Config struct {
 	Boards           []SOURCE    `toml:"boards"`
 	Hydrus_conf      HYDRUS_CONF `toml:"hydrus"`
@@ -48,7 +52,8 @@ var (
 	Hydrus_conf      HYDRUS_CONF
 	Dirs             []string
 	confMu           sync.Mutex
-	ustatus          bool
+	usuccess         bool
+	ustatus          string
 	Ignore_enabled   bool
 	Inferred_enabled bool
 )
@@ -85,8 +90,9 @@ func api_qs_form(booru *SOURCE) {
 	}
 }
 
-func Source_process(conf Config) {
-	ustatus = true
+func Config_process(conf Config) {
+	usuccess = true
+	ustatus = conf_success
 
 	Dirs = conf.Dirs
 	Sources = conf.Boards
@@ -96,7 +102,8 @@ func Source_process(conf Config) {
 		result := hydrus_conn.validate(Hydrus_conf)
 		if !result {
 			Hydrus_conf.ENABLED = false
-			ustatus = false
+			usuccess = false
+			ustatus = "Hydrus connection failed. Integration has been disabled."
 		}
 	}
 
@@ -145,10 +152,12 @@ func Edit_conf(mode MessageType, data any) {
 
 		result := validate_source(new_source)
 		if result {
-			ustatus = true
+			usuccess = true
+			ustatus = conf_success
 			conf.Boards = append(conf.Boards, new_source)
 		} else {
-			ustatus = false
+			usuccess = false
+			ustatus = new_source.NAME + " settings could not be validated. Changes Discarded."
 			return
 		}
 	case editsource:
@@ -165,15 +174,18 @@ func Edit_conf(mode MessageType, data any) {
 
 		result := validate_source(new_source)
 		if result {
-			ustatus = true
+			usuccess = true
+			ustatus = conf_success
 			conf.Boards[int(cast_data["INDEX"].(float64))] = new_source
 		} else {
-			ustatus = false
+			usuccess = false
+			ustatus = new_source.NAME + " settings could not be validated. Changes Discarded."
 			return
 		}
 	case deletesource:
 		defer update(updatestatus)
-		ustatus = true
+		usuccess = true
+		ustatus = conf_success
 		update_front = true
 
 		index := int(data.(float64))
@@ -234,10 +246,13 @@ func Edit_conf(mode MessageType, data any) {
 			result = hydrus_conn.validate(hydrus_edit)
 		}
 		if result {
-			ustatus = true
+			usuccess = true
+			ustatus = conf_success
 			conf.Hydrus_conf = hydrus_edit
 		} else {
-			ustatus = false
+			usuccess = false
+			ustatus = "Hydrus connection failed. Changes Discarded."
+			conf.Hydrus_conf.ENABLED = false
 			return
 		}
 	}
@@ -248,7 +263,7 @@ func Edit_conf(mode MessageType, data any) {
 	err = os.WriteFile(conf_path, buf.Bytes(), 0644)
 	Err_check(err)
 
-	Source_process(conf)
+	Config_process(conf)
 
 	if update_front {
 		update(updateconf)
@@ -281,7 +296,7 @@ func Read_conf() {
 	_, err = toml.DecodeFile(conf_path, &conf)
 	Err_check(err)
 
-	Source_process(conf)
+	Config_process(conf)
 
 	Dirs = conf.Dirs
 

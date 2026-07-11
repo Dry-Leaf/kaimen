@@ -240,14 +240,14 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
             tooltip: 'Search',
             icon: const Icon(Icons.search),
             onPressed: () {
-              Navigator.pushNamed(context, '/');
+              Navigator.pushReplacementNamed(context, '/');
             },
           ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/settings');
+              Navigator.pushReplacementNamed(context, '/settings');
             },
           ),
           IconButton(

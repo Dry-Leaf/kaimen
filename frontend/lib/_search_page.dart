@@ -205,9 +205,8 @@ class _SearchPageState extends ConsumerState<SearchPage> {
         final isCurrentRoute = ModalRoute.of(context)?.isCurrent ?? false;
         if (!isCurrentRoute) return;
 
-        if (!status[0]) {
-          final String msg;
-          msg = "Hydrus connection failed. Integration has been disabled.";
+        if (!status[1]) {
+          final String msg = status[0];
           showDialog(
             context: context,
             builder: (context) => AlertDialog(content: Text(msg)),
@@ -268,14 +267,14 @@ class _SearchPageState extends ConsumerState<SearchPage> {
             tooltip: 'Edit Tags',
             icon: const Icon(Icons.sell),
             onPressed: () {
-              Navigator.pushNamed(context, '/tagedit');
+              Navigator.pushReplacementNamed(context, '/tagedit');
             },
           ),
           IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {
-              Navigator.pushNamed(context, '/settings');
+              Navigator.pushReplacementNamed(context, '/settings');
             },
           ),
           IconButton(

@@ -8,8 +8,7 @@ import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
 
 class SourcesTab extends ConsumerStatefulWidget {
-  final int tabIndex;
-  const SourcesTab({super.key, required this.tabIndex});
+  const SourcesTab({super.key});
 
   @override
   ConsumerState<SourcesTab> createState() => _SourcesTabState();
@@ -35,26 +34,6 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
     AsyncValue<dynamic> config = ref.watch(
       messageByTypeProvider(Message.getconf),
     );
-
-    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
-      next.whenData((status) {
-        final tabController = DefaultTabController.of(context);
-        if (tabController.index != widget.tabIndex) {
-          return;
-        }
-
-        final String msg;
-        if (status[0]) {
-          msg = "Changes successfully saved.";
-        } else {
-          msg = "Invalid input. Changes Discarded.";
-        }
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(content: Text(msg)),
-        );
-      });
-    });
 
     return config.when(
       loading: () => const CircularProgressIndicator(),

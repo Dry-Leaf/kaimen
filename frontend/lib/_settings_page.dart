@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '_backend_conn.dart' show Conn, Message, connProvider;
+import '_backend_conn.dart'
+    show Conn, Message, messageByTypeProvider, connProvider;
 
 import '_directory_tab.dart' show DirectoryTab;
 import '_misc_tab.dart' show MiscTab;
@@ -33,6 +34,17 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
+      next.whenData((status) {
+        final String msg = status[0];
+
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(content: Text(msg)),
+        );
+      });
+    });
+
     return DefaultTabController(
       animationDuration: Duration.zero,
       length: 5,
@@ -53,14 +65,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               tooltip: 'Search',
               icon: const Icon(Icons.search),
               onPressed: () {
-                Navigator.pushNamed(context, '/');
+                Navigator.pushReplacementNamed(context, '/');
               },
             ),
             IconButton(
               tooltip: 'Edit Tags',
               icon: const Icon(Icons.sell),
               onPressed: () {
-                Navigator.pushNamed(context, '/tagedit');
+                Navigator.pushReplacementNamed(context, '/tagedit');
               },
             ),
             IconButton(
@@ -74,9 +86,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         body: TabBarView(
           children: [
             DirectoryTab(),
-            SourcesTab(tabIndex: 1),
+            SourcesTab(),
             TagsTab(),
-            HydrusTab(tabIndex: 3),
+            HydrusTab(),
             MiscTab(),
           ],
         ),

@@ -156,7 +156,7 @@ func update(mode MessageType) {
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
 	case updatestatus:
-		resp = message{Type: updatestatus, Value: []interface{}{ustatus, rand.IntN(10000)}}
+		resp = message{Type: updatestatus, Value: []interface{}{ustatus, usuccess, rand.IntN(10000)}}
 	}
 
 	err := wsjson.Write(ctx, c, resp)
