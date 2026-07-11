@@ -648,13 +648,11 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 		err := row.Scan(&freq, &category)
 		Err_check(err)
 
-		if freq == 0 {
-			if category == -1 {
-				fmt.Printf("new tag %s\n", tag)
-				cat := get_tag_cat(tag)
-				if cat != 0 {
-					update_tag_stmt.Exec(cat, tag)
-				}
+		if category == -1 {
+			fmt.Printf("new tag %s\n", tag)
+			cat := get_tag_cat(tag)
+			if cat != 0 {
+				update_tag_stmt.Exec(cat, tag)
 			}
 		}
 		new_relation_stmt.Exec(md5sum, tag, inferred)
