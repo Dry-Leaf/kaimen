@@ -8,13 +8,13 @@
 
 ### Linux
 
-- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.2)
+- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.3)
 
 ### Windows
 
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
-- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.2)
+- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.3)
 
 ### Setup
 Gelbooru requires api credentials to be provided to pull metadata from it. After making an account and logging in, your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
