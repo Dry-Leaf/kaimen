@@ -74,9 +74,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         body: TabBarView(
           children: [
             DirectoryTab(),
-            SourcesTab(),
+            SourcesTab(tabIndex: 1),
             TagsTab(),
-            HydrusTab(),
+            HydrusTab(tabIndex: 3),
             MiscTab(),
           ],
         ),

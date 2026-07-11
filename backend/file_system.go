@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -127,17 +126,7 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 
 			fileData, err := hydrus_conn.get_bytes(request_url)
 			if err != nil {
-				log.Printf("Hydrus fetch failed: %v", err)
-
-				if strings.Contains(err.Error(), "connection refused") ||
-					strings.Contains(err.Error(), "actively refused it") {
-					return -int(fuse.ENOTCONN)
-				}
-
-				if strings.Contains(err.Error(), "404") || strings.Contains(err.Error(), "status: 404") {
-					return -int(fuse.ENOENT)
-				}
-				return -int(fuse.EIO)
+				return -int(fuse.ENOENT)
 			}
 
 			hydrus_conn.cacheMu.Lock()

@@ -8,7 +8,8 @@ import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
 
 class SourcesTab extends ConsumerStatefulWidget {
-  const SourcesTab({super.key});
+  final int tabIndex;
+  const SourcesTab({super.key, required this.tabIndex});
 
   @override
   ConsumerState<SourcesTab> createState() => _SourcesTabState();
@@ -37,6 +38,11 @@ class _SourcesTabState extends ConsumerState<SourcesTab> {
 
     ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
       next.whenData((status) {
+        final tabController = DefaultTabController.of(context);
+        if (tabController.index != widget.tabIndex) {
+          return;
+        }
+
         final String msg;
         if (status[0]) {
           msg = "Changes successfully saved.";

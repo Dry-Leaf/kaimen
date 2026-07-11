@@ -8,20 +8,26 @@
 
 ### Linux
 
-- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.0)
+- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.2)
 
 ### Windows
 
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
-- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.1)
+- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.2)
 
 ### Setup
 Gelbooru requires api credentials to be provided to pull metadata from it. After making an account and logging in, your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
 
 <img src="https://github.com/user-attachments/assets/60744096-5e80-4714-a7b6-6a261d3e2d61" width="900">
 
+### Hydrus Integration
+
+Set up the Hydrus client api service and insert its URL and api access key into Kaimen's setting.
+
 # Advantages over Hydrus Network
+`Note: Kaimen can also be used as a front-end for Hydrus`
+
 - Minimal setup
 - Familiar UI
 - Built in [tag inference](https://huggingface.co/Camais03/camie-tagger-v2)

@@ -88,6 +88,16 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 	if err != nil {
 		Hydrus_conf.ENABLED = false
 		ustatus = false
+
+		clear(hy_nams)
+		hydrus_conn.cacheMu.Lock()
+		clear(hydrus_conn.fileCache)
+		hydrus_conn.cacheMu.Unlock()
+
+		defer update(counter)
+		defer update(updateconf)
+		defer update(updatestatus)
+
 		return nil, nil, fmt.Errorf("network error: %w", err)
 	}
 
@@ -173,7 +183,6 @@ func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
 }
 
 func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
-	fmt.Println("collecting hydrus ids")
 	hydrus_conn.cacheMu.Lock()
 	if len(hydrus_conn.fileCache) > 50 {
 		fmt.Println("clearing hydrus file cache")

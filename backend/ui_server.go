@@ -104,7 +104,6 @@ func Open_and_select(path string) error {
 }
 
 func Open_search_result(path string) {
-	fmt.Println("trying to open results")
 	if path == "" {
 		err := browser.OpenFile(result_loc)
 		Err_check(err)
@@ -287,7 +286,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			editinferred, newdirectory, deletedirectory, edithydrus:
 			Edit_conf(req.Type, req.Value)
 		case openresults:
-			fmt.Println("open result case")
 			value := req.Value.(string)
 			Open_search_result(value)
 		case edittag:

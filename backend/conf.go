@@ -228,9 +228,6 @@ func Edit_conf(mode MessageType, data any) {
 		hydrus_edit := HYDRUS_CONF{ENABLED: cast_data["ENABLED"].(bool), URL: cast_data["URL"].(string),
 			ACCESS_KEY: cast_data["ACCESS_KEY"].(string)}
 
-		fmt.Println("HYDRUS EDIT")
-		fmt.Println(hydrus_edit)
-
 		result := true
 
 		if hydrus_edit.ENABLED {

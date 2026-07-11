@@ -5,7 +5,8 @@ import '_backend_conn.dart'
     show Conn, Message, connProvider, messageByTypeProvider;
 
 class HydrusTab extends ConsumerStatefulWidget {
-  const HydrusTab({super.key});
+  final int tabIndex;
+  const HydrusTab({super.key, required this.tabIndex});
 
   @override
   ConsumerState<HydrusTab> createState() => _HydrusTabState();
@@ -38,6 +39,11 @@ class _HydrusTabState extends ConsumerState<HydrusTab> {
 
     ref.listen(messageByTypeProvider(Message.updatestatus), (previous, next) {
       next.whenData((status) {
+        final tabController = DefaultTabController.of(context);
+        if (tabController.index != widget.tabIndex) {
+          return;
+        }
+
         final String msg;
         if (status[0]) {
           msg = "Changes successfully saved.";
