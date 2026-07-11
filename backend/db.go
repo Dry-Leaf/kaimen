@@ -91,7 +91,7 @@ const (
 
 	new_image = `INSERT INTO files(md5,extension,file_path,ignore) VALUES(?,?,?,?);`
 
-	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 0, 0)
+	new_tag = `INSERT INTO tags(name, freq, category) VALUES(?, 0, -1)
 		ON CONFLICT(name)
 		DO UPDATE SET name = EXCLUDED.name
 	 	RETURNING freq, category;`
@@ -649,7 +649,7 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 		Err_check(err)
 
 		if freq == 0 {
-			if category == 0 {
+			if category == -1 {
 				fmt.Printf("new tag %s\n", tag)
 				cat := get_tag_cat(tag)
 				if cat != 0 {
