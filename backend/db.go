@@ -656,9 +656,6 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 					update_tag_stmt.Exec(cat, tag)
 				}
 			}
-			if category == -1 {
-				update_tag_stmt.Exec(0, tag)
-			}
 		}
 		new_relation_stmt.Exec(md5sum, tag, inferred)
 	}
