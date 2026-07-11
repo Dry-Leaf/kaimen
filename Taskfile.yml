@@ -83,6 +83,7 @@ tasks:
       - cp AppRun dist/AppDir
       - cp kaimen.desktop dist/AppDir
       - cp kaimen.png dist/AppDir
+      - chmod +x dist/AppDir/AppRun
 
   build-linux:
     desc: Build both backend and frontend
