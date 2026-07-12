@@ -6,23 +6,16 @@ vars:
   CGO_WIN: '-IC:\PROGRA~2\WinFsp\inc\fuse'
   ONNX_LIB_WIN: "onnxruntime.dll"
   ONNX_LIB_LINUX: "libonnxruntime.so.1.26.0"
+  ONNX_MODEL_URL: "https://huggingface.co/azuremountain/camie-tagger-v2_quantized/resolve/main/camie-tagger-v2_quantized.onnx"
 
 tasks:
-  build-backend-debug:
+  _obtain-model:
     dir: backend
-    preconditions:
-      - test -f go.mod
-    env:
-      CGO_CFLAGS: "{{.CGO_WIN}}"
+    status:
+      - test -f camie-tagger-v2_quantized.onnx
     cmds:
-      - go build -ldflags="-s -w" -o kaimen.exe
-      - task: _copy-backend-assets
-        vars:
-          {
-            TARGET: "{{.RELEASE_DIR_WIN}}",
-            ONNX: "{{.ONNX_LIB_WIN}}",
-            EXT: ".exe",
-          }
+      - echo "Downloading Onnx model..."
+      - curl -L -o camie-tagger-v2_quantized.onnx "{{.ONNX_MODEL_URL}}"
 
   build-backend:
     dir: backend
@@ -30,8 +23,11 @@ tasks:
       - test -f go.mod
     env:
       CGO_CFLAGS: "{{.CGO_WIN}}"
+    vars:
+      LDFLAGS: '{{if .CLI_ARGS}}-s -w{{else}}-s -w -H=windowsgui{{end}}'
     cmds:
-      - go build -ldflags="-s -w -H=windowsgui" -o kaimen.exe
+      - go build -ldflags="{{.LDFLAGS}}" -o kaimen.exe
+      - task: _obtain-model
       - task: _copy-backend-assets
         vars:
           {
@@ -60,6 +56,7 @@ tasks:
       - test -f go.mod
     cmds:
       - go build -ldflags="-s -w" -o kaimen
+      - task: _obtain-model
       - task: _copy-backend-assets
         vars:
           {

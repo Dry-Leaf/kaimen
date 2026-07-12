@@ -9,3 +9,4 @@ AppDir
 dist
 *.AppImage
 Tasks.md
+*.onnx
