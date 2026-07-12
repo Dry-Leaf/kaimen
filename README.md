@@ -12,13 +12,13 @@ A Fuse mount is created, and virtual files populate a directory within it whenev
 
 ### Linux
 
-- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.4)
+- Download the AppImage from from the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.5)
 
 ### Windows
 
 - Install [WinFSP](https://winfsp.dev/rel/)
 - Restart your machine
-- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.4)
+- Download the latest [release](https://github.com/Dry-Leaf/kaimen/releases/tag/2.5)
 
 ### Setup
 Gelbooru requires api credentials to be provided to pull metadata from it. After making an account and logging in, your credentials can be found at the bottom of [this page](https://gelbooru.com/index.php?page=account&s=options).
