@@ -20,7 +20,17 @@ const (
 	sort_order    = `&file_sort_asc=false`
 	hy_access     = `&Hydrus-Client-API-Access-Key=`
 	client_info   = `/client_info?`
+	database_info = `/manage_database/mr_bones?`
 )
+
+type hydrus_db_results struct {
+	Boned_stats hydrus_stats `JSON:"boned_stats"`
+}
+
+type hydrus_stats struct {
+	Num_inbox   int `JSON:"num_inbox"`
+	Num_archive int `JSON:"num_archive"`
+}
 
 type hydrus_id_results struct {
 	File_ids []int `JSON:"file_ids"`
@@ -116,7 +126,7 @@ func (hyc *Hydrus_conn) do_get(ctx context.Context, url string) (*http.Response,
 }
 
 func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	resp, cleanup, err := hyc.do_get(ctx, request_url)
@@ -135,7 +145,7 @@ func (hyc *Hydrus_conn) get_bytes(request_url string) ([]byte, error) {
 }
 
 func (hyc *Hydrus_conn) get_json(request_url string, target interface{}) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
 	resp, cleanup, err := hyc.do_get(ctx, request_url)
@@ -207,6 +217,19 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 	}
 
 	return id_results.File_ids
+}
+
+func (hyc *Hydrus_conn) get_total() int {
+	request_url := Hydrus_conf.URL + database_info + hy_access + Hydrus_conf.ACCESS_KEY
+
+	var db_results hydrus_db_results
+
+	if err := hyc.get_json(request_url, &db_results); err != nil {
+		log.Printf("Failed to db info: %v", err)
+		return 0
+	}
+
+	return db_results.Boned_stats.Num_archive + db_results.Boned_stats.Num_inbox
 }
 
 func (hyc *Hydrus_conn) get_count(tag string) int {

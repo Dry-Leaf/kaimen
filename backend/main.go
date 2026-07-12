@@ -54,7 +54,7 @@ func init() {
 			Transport: &http.Transport{
 				MaxIdleConns:        100,
 				MaxIdleConnsPerHost: 100,
-				IdleConnTimeout:     90 * time.Second,
+				IdleConnTimeout:     2 * time.Minute,
 			},
 		},
 		fileCache: make(map[string][]byte),

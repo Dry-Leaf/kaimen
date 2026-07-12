@@ -12,6 +12,8 @@ import '_video_player.dart' show DesktopFriendlyVideoPlayer;
 import "_search_box.dart" show WithSuggestions;
 import '_suggestions.dart' show Suggestion, SuggestionList;
 
+import 'main.dart' show Winop;
+
 class TagInputText extends Notifier<String> {
   @override
   String build() => "";
@@ -250,12 +252,7 @@ class _TagEditPageState extends ConsumerState with WithSuggestions {
               Navigator.pushReplacementNamed(context, '/settings');
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              windowManager.hide();
-            },
-          ),
+          Winop(),
         ],
       ),
       body: Column(

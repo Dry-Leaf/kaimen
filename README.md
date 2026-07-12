@@ -58,6 +58,7 @@ Set up the Hydrus client api service and insert its URL and api access key into 
 - cmake
 - ninja
 - ayatana-appindicator3-0.1 development
+- libnotify-dev
 - patchelf
 
 ### Windows

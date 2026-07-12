@@ -55,6 +55,8 @@ dependencies:
   video_player: ^2.11.1
   fvp: ^0.37.0
 
+  local_notifier: ^0.1.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

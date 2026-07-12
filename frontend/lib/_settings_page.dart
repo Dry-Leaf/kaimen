@@ -11,6 +11,8 @@ import '_source_tab.dart' show SourcesTab;
 import '_tags_tab.dart' show TagsTab;
 import '_hydrus_tab.dart' show HydrusTab;
 
+import 'main.dart' show Winop;
+
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
@@ -75,12 +77,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 Navigator.pushReplacementNamed(context, '/tagedit');
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.close),
-              onPressed: () {
-                windowManager.hide();
-              },
-            ),
+            Winop(),
           ],
         ),
         body: TabBarView(

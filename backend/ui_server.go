@@ -135,7 +135,7 @@ func update(mode MessageType) {
 		file_count := get_count(file_count)
 
 		if Hydrus_conf.ENABLED {
-			file_count += hydrus_conn.get_count("system:everything")
+			file_count += hydrus_conn.get_total()
 		}
 
 		indexMu.Lock()
@@ -205,7 +205,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				file_count := get_count(file_count)
 
 				if Hydrus_conf.ENABLED {
-					file_count += hydrus_conn.get_count("system:everything")
+					file_count += hydrus_conn.get_total()
 				}
 
 				indexMu.Lock()

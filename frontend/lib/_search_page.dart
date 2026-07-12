@@ -10,6 +10,8 @@ import '_backend_conn.dart'
 import '_search_box.dart' show SearchBox;
 import '_digit_row.dart' show DigitRow;
 
+import 'main.dart' show Winop;
+
 class QueueNotif extends ConsumerStatefulWidget {
   const QueueNotif({super.key, required this.queueSize});
 
@@ -277,12 +279,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               Navigator.pushReplacementNamed(context, '/settings');
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              windowManager.hide();
-            },
-          ),
+          Winop(),
         ],
       ),
       body: counterMessage.when(

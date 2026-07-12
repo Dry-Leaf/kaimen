@@ -12,6 +12,41 @@ import '_edit_page.dart' show TagEditPage;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:fvp/fvp.dart' as fvp;
 
+import 'package:local_notifier/local_notifier.dart';
+
+class Winop extends StatelessWidget {
+  const Winop({super.key});
+
+  static bool _hasClosedOnce = false;
+
+  static void close() {
+    windowManager.hide();
+
+    if (!_hasClosedOnce) {
+      _hasClosedOnce = true;
+
+      LocalNotification notification = LocalNotification(
+        title: "Notice",
+        body:
+            "Kaimen has been minimized to the tray. This notification will only appear once.",
+      );
+
+      notification.show();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      tooltip: 'Minimize to Tray',
+      icon: const Icon(Icons.close),
+      onPressed: () {
+        close();
+      },
+    );
+  }
+}
+
 Future<void> setupTray(ProviderContainer container) async {
   final iconPath = Platform.isWindows
       ? 'assets/kaimen.ico'
@@ -86,6 +121,8 @@ void main() async {
 
   await setupTray(container);
 
+  await localNotifier.setup(appName: 'Kaimen');
+
   WindowOptions windowOptions = WindowOptions(
     size: Size(800, 600),
     center: true,
@@ -120,7 +157,7 @@ class _UIState extends State<UI> with WindowListener {
 
   @override
   void onWindowClose() async {
-    windowManager.hide();
+    Winop.close();
   }
 
   @override
