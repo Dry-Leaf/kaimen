@@ -82,7 +82,6 @@ func dequeue() {
 			if pending_create.IsEmpty() {
 				pending_remove.Range(func(key, _ any) bool {
 					path := key.(string)
-					writeMu.Lock()
 					_, err := os.Stat(path)
 					if err != nil {
 						if os.IsNotExist(err) {
@@ -92,7 +91,6 @@ func dequeue() {
 						}
 					}
 					pending_remove.Delete(path)
-					writeMu.Unlock()
 					return true
 				})
 			}

@@ -94,7 +94,10 @@ func index(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return nil
 			}
-			process(path, mtype.Extension(), info)
+			md5sum := process(path, mtype.Extension(), info)
+			if md5sum != "" {
+				pending_infer.Store([3]string{md5sum, path, mtype.Extension()})
+			}
 		}
 	}
 

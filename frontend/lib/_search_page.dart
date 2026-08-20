@@ -222,6 +222,20 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       appBar: AppBar(
         title: const Text('Kaimen'),
         actions: <Widget>[
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort order',
+            onSelected: (String criteria) {
+              // Your sorting update logic goes here
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem(
+                value: 'relevant',
+                child: Text('Most Relevant'),
+              ),
+              const PopupMenuItem(value: 'unordered', child: Text('Unordered')),
+            ],
+          ),
           IconButton(
             tooltip: 'Open Search Results',
             icon: const Icon(Icons.folder),

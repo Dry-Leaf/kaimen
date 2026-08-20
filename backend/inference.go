@@ -8,6 +8,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -256,13 +257,13 @@ func inference_worker() {
 
 		results := infer_tags(md5sum, path)
 		if results == nil {
-			fmt.Println("Invalid format:", path)
+			log.Println("Invalid format:", path)
 			if is_video(ext) {
 				results = []string{"animated"}
 			}
 		}
-		fmt.Println("INFERRED:", path)
-		fmt.Println(results)
+		log.Println("INFERRED:", path)
+		//fmt.Println(results)
 		insert_tags(md5sum, path, ext, results, false, false, true)
 		update(counter)
 	}
@@ -285,7 +286,7 @@ func dequeue_inference() {
 				case inferQueue <- path:
 					pending_infer.Delete(path)
 				default:
-					fmt.Println("Inference queue is full!")
+					log.Println("Inference queue is full!")
 				}
 				return true
 			})

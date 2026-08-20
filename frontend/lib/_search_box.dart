@@ -206,11 +206,10 @@ class _TextInput extends ConsumerState with WithSuggestions {
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Ex: blue_sky cloud 1girl',
-              suffix: Column(
-                children: [
-                  IconButton(icon: Icon(Icons.search), onPressed: sendInput),
-                  IconButton(icon: Icon(Icons.search), onPressed: sendInput),
-                ],
+              prefixIcon: const Icon(Icons.search),
+              suffix: IconButton(
+                icon: Icon(Icons.search),
+                onPressed: sendInput,
               ),
             ),
           ),
