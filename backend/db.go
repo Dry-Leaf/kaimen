@@ -401,6 +401,12 @@ func get_count(query ReadSQL, params ...any) int {
 	return result
 }
 
+//0	General
+//1	Artist
+//3	Copyright
+//4	Character
+//5	Meta
+
 type tag struct {
 	Name      string `json:"Name"`
 	Freq      int    `json:"Freq"`
@@ -416,10 +422,6 @@ func get_suggestions(query string, min, limit float64) []tag {
 
 	tag_query_stmt := stmts[tag_query]
 
-	if Hydrus_conf.ENABLED {
-		min = 0
-	}
-
 	rows, err := tag_query_stmt.Query(query, min, limit)
 	Err_check(err)
 	defer rows.Close()
@@ -429,11 +431,6 @@ func get_suggestions(query string, min, limit float64) []tag {
 	for rows.Next() {
 		var ctag tag
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
-
-		if Hydrus_conf.ENABLED {
-			amount := hydrus_conn.get_count(ctag.Name)
-			ctag.Freq += amount
-		}
 
 		rem := ctag.Name[len(query):]
 		ctag.Remainder = rem

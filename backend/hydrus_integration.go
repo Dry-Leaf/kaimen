@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 
 const (
 	search_files  = `/get_files/search_files?tags=%s`
+	search_tags   = `/add_tags/search_tags?search=%s`
 	get_file      = `/get_files/file?file_id=%d`
 	get_meta_data = `/get_files/file_metadata?file_ids=%s`
 	sort_order    = `&file_sort_asc=false`
@@ -47,6 +49,15 @@ type hydrus_metadata_results struct {
 	Metadata []hydrus_metadata `JSON:"metadata"`
 }
 
+type hydrus_tag struct {
+	Value string `JSON:"value"`
+	Count int    `JSON:"count"`
+}
+
+type hydrus_tag_results struct {
+	Tags []hydrus_tag `JSON:"tags"`
+}
+
 var hy_meta = [3]string{"width", "height", "duration"}
 
 type Hydrus_conn struct {
@@ -56,6 +67,8 @@ type Hydrus_conn struct {
 }
 
 var hydrus_conn *Hydrus_conn
+
+var cat_regex = regexp.MustCompile(`(\S+?):(\S+)`)
 
 // do this on startup and before opening directory
 func (hyc *Hydrus_conn) validate(hydrus_edit HYDRUS_CONF) bool {
@@ -232,10 +245,6 @@ func (hyc *Hydrus_conn) get_total() int {
 	return db_results.Boned_stats.Num_archive + db_results.Boned_stats.Num_inbox
 }
 
-func (hyc *Hydrus_conn) get_count(tag string) int {
-	return len(hyc.collect_ids([]string{tag}))
-}
-
 func (hyc *Hydrus_conn) query_recent() []string {
 	file_ids := hyc.collect_ids([]string{"system:limit = 50"})
 	return hyc.process_ids(file_ids)
@@ -297,4 +306,44 @@ OUTER_META:
 
 	file_ids := hyc.collect_ids(tags)
 	return hyc.process_ids(file_ids)
+}
+
+func (hyc *Hydrus_conn) get_tags(query string, limit int) []tag {
+	param := url.QueryEscape(query)
+	request_url := Hydrus_conf.URL + fmt.Sprintf(search_tags, param) + hy_access + Hydrus_conf.ACCESS_KEY
+
+	var tag_results hydrus_tag_results
+
+	if err := hyc.get_json(request_url, &tag_results); err != nil {
+		log.Printf("Failed to fetch tags: %v", err)
+		return nil
+	}
+
+	results := make([]tag, len(tag_results.Tags))
+
+	for idx, match := range tag_results.Tags[:min(limit, len(tag_results.Tags))] {
+		cat := 0
+
+		namespace := cat_regex.FindStringSubmatch(match.Value)
+
+		if namespace != nil {
+			switch namespace[1] {
+			case "creator":
+				cat = 1
+			case "character", "person":
+				cat = 4
+			case "series", "studio", "photoset":
+				cat = 3
+			case "meta":
+				cat = 5
+			default:
+				cat = 0
+			}
+		}
+
+		results[idx] = tag{
+			Name: match.Value, Freq: match.Count, Category: cat, Remainder: match.Value[len(query):]}
+	}
+
+	return results
 }

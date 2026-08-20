@@ -132,10 +132,12 @@ func update(mode MessageType) {
 
 	switch mode {
 	case counter:
-		file_count := get_count(file_count)
+		var file_count_result int
 
 		if Hydrus_conf.ENABLED {
-			file_count += hydrus_conn.get_total()
+			file_count_result = hydrus_conn.get_total()
+		} else {
+			file_count_result = get_count(file_count)
 		}
 
 		indexMu.Lock()
@@ -151,7 +153,7 @@ func update(mode MessageType) {
 			dir_length = len(Dirs)
 		}
 
-		resp = message{Type: counter, Value: []interface{}{file_count, keys, dir_length > 0, pending_count}}
+		resp = message{Type: counter, Value: []interface{}{file_count_result, keys, dir_length > 0, pending_count}}
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -202,10 +204,12 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				err := wsjson.Write(ctx, c, resp)
 				Err_check(err)
 			} else {
-				file_count := get_count(file_count)
+				var total_file_count int
 
 				if Hydrus_conf.ENABLED {
-					file_count += hydrus_conn.get_total()
+					total_file_count = hydrus_conn.get_total()
+				} else {
+					total_file_count = get_count(file_count)
 				}
 
 				indexMu.Lock()
@@ -220,7 +224,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 					dir_length = len(Dirs)
 				}
 
-				resp := message{Type: counter, Value: []interface{}{file_count, keys, dir_length > 0, pending_create.count.Load()}}
+				resp := message{Type: counter, Value: []interface{}{total_file_count, keys, dir_length > 0, pending_create.count.Load()}}
 				err := wsjson.Write(ctx, c, resp)
 				Err_check(err)
 
@@ -238,7 +242,13 @@ func handle(w http.ResponseWriter, r *http.Request) {
 
 			var results []tag
 			if lw != "" {
-				results = get_suggestions(lw, req.Value.([]interface{})[2].(float64), req.Value.([]interface{})[3].(float64))
+				limit := req.Value.([]interface{})[3].(float64)
+
+				if Hydrus_conf.ENABLED {
+					results = hydrus_conn.get_tags(lw, int(limit))
+				} else {
+					results = get_suggestions(lw, req.Value.([]interface{})[2].(float64), limit)
+				}
 			}
 			resp := message{Type: autosuggest, Value: results}
 
