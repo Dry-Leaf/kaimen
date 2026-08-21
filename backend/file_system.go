@@ -120,7 +120,6 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 		fileData, cached := hydrus_conn.fileCache[filename]
 
 		if !cached {
-			fmt.Println(path, " not in hydrus cache")
 			hd_id := hd_result_map[filename]
 			request_url := Hydrus_conf.URL + fmt.Sprintf(get_file, hd_id) + hy_access + Hydrus_conf.ACCESS_KEY
 

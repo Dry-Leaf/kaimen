@@ -130,7 +130,7 @@ func (hyc *Hydrus_conn) validate(hydrus_edit HYDRUS_CONF) bool {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println("invalid credentials")
+		log.Println("invalid credentials")
 		cleanup()
 		return false
 	}
@@ -238,15 +238,13 @@ func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
 		hd_meta_map[mirror_name] = md
 	}
 
-	fmt.Println(file_names)
-
 	return file_names
 }
 
 func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 	hydrus_conn.cacheMu.Lock()
 	if len(hydrus_conn.fileCache) > 50 {
-		fmt.Println("clearing hydrus file cache")
+		log.Println("clearing hydrus file cache")
 		clear(hydrus_conn.fileCache)
 	}
 	hydrus_conn.cacheMu.Unlock()
@@ -261,8 +259,6 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 
 	request_url := Hydrus_conf.URL + fmt.Sprintf(search_files, params) + hy_access + Hydrus_conf.ACCESS_KEY +
 		current_sort_order + current_sort_type
-
-	//fmt.Println(request_url)
 
 	var id_results hydrus_id_results
 

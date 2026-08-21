@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
@@ -92,7 +91,11 @@ class _ResultCounterState extends ConsumerState<ResultCounter> {
       data: (msg) {
         _startFade(msg[1].toString());
 
-        return Opacity(opacity: _opacity, child: Text("${msg[0]} Results"));
+        var output = msg[0] == -1
+            ? "Search in progres..."
+            : "${msg[0]} Results";
+
+        return Opacity(opacity: _opacity, child: Text(output));
       },
     );
   }

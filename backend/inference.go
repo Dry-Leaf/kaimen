@@ -141,7 +141,7 @@ func infer_tags_closure() func(string, string) []string {
 
 	local_DLL := filepath.Clean(filepath.Join(exe_dir, ONNX_LIB))
 
-	fmt.Println("Forcing DLL from:", local_DLL)
+	log.Println("Forcing DLL from:", local_DLL)
 	ort.SetSharedLibraryPath(local_DLL)
 
 	err = ort.InitializeEnvironment()
@@ -263,7 +263,7 @@ func inference_worker() {
 			}
 		}
 		log.Println("INFERRED:", path)
-		//fmt.Println(results)
+
 		insert_tags(md5sum, path, ext, results, false, false, true)
 		update(counter)
 	}

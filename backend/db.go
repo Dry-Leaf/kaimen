@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -321,8 +322,8 @@ func gather_tags(md5sum string) map[string]string {
 
 	prev_md5sum = md5sum
 
-	fmt.Println(map[string]string{"path": path, "tags": tags,
-		"artists": artists, "timestamp": timestamp, "filename": filename, "dimension": dimensions})
+	/*fmt.Println(map[string]string{"path": path, "tags": tags,
+	"artists": artists, "timestamp": timestamp, "filename": filename, "dimension": dimensions})*/
 
 	return map[string]string{"path": path, "tags": tags,
 		"artists": artists, "timestamp": timestamp, "filename": filename, "dimension": dimensions}
@@ -646,7 +647,7 @@ func tag_iterate(md5sum string, tags []string, inferred bool, tx *sql.Tx) {
 		Err_check(err)
 
 		if category == -1 {
-			fmt.Printf("new tag %s\n", tag)
+			log.Printf("new tag %s\n", tag)
 			cat := get_tag_cat(tag)
 			if cat != 0 {
 				update_tag_stmt.Exec(cat, tag)
@@ -694,13 +695,8 @@ func query(q_string string) []string {
 
 	if g := limit_regex.FindStringSubmatchIndex(q_string); g != nil {
 		result_limit = q_string[g[2]:g[3]]
-		fmt.Println("POST LIMIT DAIYO")
-		fmt.Println(result_limit)
 
 		q_string = q_string[0:g[0]] + q_string[g[1]:]
-
-		fmt.Println("rest of query...")
-		fmt.Println(q_string)
 	}
 
 	for p, r := range meta_query_patterns {
@@ -737,12 +733,6 @@ func query(q_string string) []string {
 	}
 
 	fquery += tag_query_build(q_string, result_limit)
-
-	fmt.Println("fquery")
-	fmt.Println(fquery)
-
-	fmt.Println("params")
-	fmt.Println(params)
 
 	file_rows, err := conn.Query(fquery, params...)
 	if err != sql.ErrNoRows {

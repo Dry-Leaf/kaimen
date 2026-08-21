@@ -111,8 +111,7 @@ func Open_search_result(path string) {
 		Err_check(err)
 	} else {
 		err := Open_and_select(path)
-		fmt.Println("ERROR")
-		fmt.Println(err)
+		log.Println(err)
 		Err_check(err)
 	}
 }
@@ -194,9 +193,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		fmt.Println("MESSAGE RECEIVED")
-		fmt.Println(req)
-
 		switch req.Type {
 		case counter:
 			current := db_creation.Load()
@@ -257,6 +253,21 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			err := wsjson.Write(ctx, c, resp)
 			Err_check(err)
 		case userquery:
+			ticker := time.NewTicker(2 * time.Second)
+			done := make(chan bool)
+
+			go func() {
+				for {
+					select {
+					case <-done:
+						return
+					case <-ticker.C:
+						resp := message{Type: qcomplete, Value: []int{-1, rand.IntN(10000)}}
+						wsjson.Write(ctx, c, resp)
+					}
+				}
+			}()
+
 			value := req.Value.(string)
 			if len(value) > 0 {
 				nams = []string{".", ".."}
@@ -281,6 +292,9 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				result_count += len(hy_nams)
 			}
 
+			ticker.Stop()
+			done <- true
+
 			resp := message{Type: qcomplete, Value: []int{result_count - 2, rand.IntN(10000)}}
 			wsjson.Write(ctx, c, resp)
 		case getconf:
@@ -289,8 +303,6 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			wsjson.Write(ctx, c, resp)
 		case gettags:
 			info := gather_tags(req.Value.(string))
-			fmt.Println("gathered info")
-			fmt.Println(info)
 			resp := message{Type: gettags, Value: info}
 			wsjson.Write(ctx, c, resp)
 		case sendtags:

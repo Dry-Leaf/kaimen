@@ -151,7 +151,6 @@ func process(path, ext string, info os.FileInfo) string {
 	prev_ignored := ignore_check(md5sum) > 0
 	if Ignore_enabled {
 		if prev_ignored {
-			//fmt.Println("ignoring: " + md5sum)
 			return ""
 		}
 	}
@@ -160,8 +159,6 @@ func process(path, ext string, info os.FileInfo) string {
 	if result > 0 {
 		return ""
 	}
-
-	//fmt.Printf("process: %s, md5: %s \n", path, md5sum)
 
 	if index_count.Load() > 9 {
 		index_count.Store(0)
@@ -174,7 +171,6 @@ func process(path, ext string, info os.FileInfo) string {
 	to_ignore := true
 	tags, complete_meta, found_meta := get_tags(md5sum, ext)
 	if tags != nil {
-		//fmt.Printf("tags got for %s \n", path)
 		to_ignore = false
 	}
 	insert_tags(md5sum, path, ext, tags, to_ignore, prev_ignored, false)
@@ -183,8 +179,6 @@ func process(path, ext string, info os.FileInfo) string {
 	insert_metadata(md5sum, meta)
 
 	return md5sum
-
-	//fmt.Printf("%s finished \n", path)
 }
 
 type cat struct {
@@ -248,7 +242,6 @@ func get_tags(md5sum, ext string) ([]string, bool, map[string]string) {
 			url += booru.API_QS
 		}
 
-		//fmt.Println(url)
 		resp, err := http.Get(url)
 		if err != nil {
 			continue

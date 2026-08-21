@@ -122,10 +122,9 @@ func main() {
 	go open_front()
 
 	if _, err := os.Stat(db_path); err != nil {
-		fmt.Println("Creating NEW DB")
 		new_db()
 		Make_Conns()
-		fmt.Println("DONE")
+
 		update(counter)
 	} else {
 		Make_Conns()

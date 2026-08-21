@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"image"
 	"io"
 	"os"
@@ -87,7 +86,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 	var duration float64
 
 	if d, ok := found_meta["duration"]; ok {
-		fmt.Println("test")
 		val, err := strconv.ParseFloat(d, 64)
 		Err_check(err)
 		duration = val
@@ -112,9 +110,7 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 		hash = phash.ToString()
 	}
 
-	// none of the below will work. everything in found_meta is actually string
 	if complete_meta {
-		fmt.Println("complete")
 		ts, err := dateparse.ParseAny(found_meta["timestamp"])
 		Err_check(err)
 
@@ -147,7 +143,6 @@ func get_meta(path, ext string, info os.FileInfo, complete_meta bool, found_meta
 			Err_check(err)
 			x, err := xmp.ParseXmp(f)
 			if err == nil {
-				fmt.Println("basic date")
 				cd := x.Basic.CreateDate
 				if !cd.IsZero() {
 					timestamp = cd.String()
