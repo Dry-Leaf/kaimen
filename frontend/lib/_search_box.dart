@@ -9,6 +9,37 @@ import '_suggestions.dart' show Suggestion, SuggestionList;
 import '_backend_conn.dart'
     show Conn, Message, messageByTypeProvider, connProvider;
 
+enum HydrusSortOrder(final String label) {
+  fileSize("File Size"),
+  duration("Duration"),
+  importTime("Import Time (Default)"),
+  filetype("File Type"),
+  random("Random"),
+  width("Width"),
+  height("Height"),
+  ratio("Ratio"),
+  numberOfPixels("Number Of Pixels"),
+  numberOfTags("Number Of Tags"),
+  numberOfMediaViews("Number Of Media Views"),
+  totalMediaViewtime("Total Media Viewtime"),
+  approximateBitrate("Approximate Bitrate"),
+  hasAudio("Has Audio"),
+  modifiedTime("Modified Time"),
+  framerate("Framerate"),
+  numberOfFrames("Number Of Frames"),
+  numberOfCollectionFiles("Size of Collection"),
+  lastViewedTime("Last Viewed Time"),
+  archiveTimestamp("Archive Timestamp"),
+  hashHex("Hash Hex"),
+  pixelHashHex("Pixel Hash Hex"),
+  blurhash("Blurhash"),
+  averageColourL("Average Colour (Light)"),
+  averageColourC("Average Colour (Chromatic)"),
+  averageColourGR("Average Colour (Green/Red Axis)"),
+  averageColourBY("Average Colour (Blue/Yellow Axis)"),
+  averageColourH("Average Colour (Hue)")
+}
+
 mixin WithSuggestions on ConsumerState {
   final textController = TextEditingController();
   String priorText = "";
@@ -206,7 +237,6 @@ class _TextInput extends ConsumerState with WithSuggestions {
             decoration: InputDecoration(
               border: OutlineInputBorder(),
               hintText: 'Ex: blue_sky cloud 1girl',
-              prefixIcon: const Icon(Icons.search),
               suffix: IconButton(
                 icon: Icon(Icons.search),
                 onPressed: sendInput,
@@ -219,15 +249,25 @@ class _TextInput extends ConsumerState with WithSuggestions {
   }
 }
 
-class SearchBox extends StatefulWidget {
-  const SearchBox({super.key});
+class SearchBox extends ConsumerStatefulWidget {
+  final bool _hydrusEnabled;
+  const SearchBox(this._hydrusEnabled, {super.key});
 
   @override
-  State<SearchBox> createState() => _SearchBox();
+  ConsumerState<SearchBox> createState() => _SearchBox();
 }
 
-class _SearchBox extends State<SearchBox> {
+class _SearchBox extends ConsumerState<SearchBox> {
   final controller = TextEditingController();
+  late final Conn conn;
+  var pressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    conn = ref.read(connProvider).requireValue;
+  }
 
   @override
   void dispose() {
@@ -237,6 +277,37 @@ class _SearchBox extends State<SearchBox> {
 
   @override
   Widget build(BuildContext context) {
-    return TextInput();
+    return Row(
+      children: [
+        if (widget._hydrusEnabled) ...[
+          IconButton(
+            tooltip: 'Sort asc/desc',
+            icon: pressed == true
+                ? Icon(Icons.arrow_upward)
+                : Icon(Icons.arrow_downward),
+            onPressed: () {
+              setState(() {
+                pressed = !pressed;
+                conn.send(Message.hydrusSortAsc, pressed);
+              });
+            },
+          ),
+          PopupMenuButton<HydrusSortOrder>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort type',
+            onSelected: (HydrusSortOrder criteria) {
+              conn.send(Message.hydrusSortOrder, criteria.index);
+            },
+            itemBuilder: (BuildContext context) =>
+                HydrusSortOrder.values.map((value) {
+                  return PopupMenuItem(value: value, child: Text(value.label));
+                }).toList(),
+          ),
+          const SizedBox(width: 8),
+        ],
+
+        Expanded(child: TextInput()),
+      ],
+    );
   }
 }

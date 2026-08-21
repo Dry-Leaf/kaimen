@@ -188,6 +188,7 @@ valid units: d(days), w(weeks), mo(months), y(years)""";
 class _SearchPageState extends ConsumerState<SearchPage> {
   late final Conn conn;
   int _counter = 0;
+  bool _hydrus_enabled = false;
 
   @override
   void initState() {
@@ -222,20 +223,6 @@ class _SearchPageState extends ConsumerState<SearchPage> {
       appBar: AppBar(
         title: const Text('Kaimen'),
         actions: <Widget>[
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            tooltip: 'Sort order',
-            onSelected: (String criteria) {
-              // Your sorting update logic goes here
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem(
-                value: 'relevant',
-                child: Text('Most Relevant'),
-              ),
-              const PopupMenuItem(value: 'unordered', child: Text('Unordered')),
-            ],
-          ),
           IconButton(
             tooltip: 'Open Search Results',
             icon: const Icon(Icons.folder),
@@ -313,6 +300,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
               ),
             );
           } else {
+            _hydrus_enabled = msg[4];
             return Center(
               child: Stack(
                 alignment: Alignment.center,
@@ -320,7 +308,7 @@ class _SearchPageState extends ConsumerState<SearchPage> {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
-                      SizedBox(width: 550, child: SearchBox()),
+                      SizedBox(width: 550, child: SearchBox(_hydrus_enabled)),
                       SizedBox(height: 40),
                       SizedBox(
                         height: 150,

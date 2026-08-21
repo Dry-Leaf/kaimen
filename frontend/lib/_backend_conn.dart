@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'dart:convert' show jsonDecode, jsonEncode;
 import 'dart:async' show StreamController;
 
@@ -27,6 +29,8 @@ enum Message {
   edittag,
   deletetag,
   edithydrus,
+  hydrusSortOrder,
+  hydrusSortAsc,
   getconf,
   gettags,
   sendtags,

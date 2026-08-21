@@ -19,11 +19,48 @@ const (
 	search_tags   = `/add_tags/search_tags?search=%s`
 	get_file      = `/get_files/file?file_id=%d`
 	get_meta_data = `/get_files/file_metadata?file_ids=%s`
-	sort_order    = `&file_sort_asc=false`
+	sort_type     = `&file_sort_type=%d`
+	sort_order    = `&file_sort_asc=%t`
 	hy_access     = `&Hydrus-Client-API-Access-Key=`
 	client_info   = `/client_info?`
 	database_info = `/manage_database/mr_bones?`
 )
+
+type SortOrder int64
+
+const (
+	file_size SortOrder = iota
+	duration
+	import_time
+	filetype
+	random
+	width
+	height
+	ratio
+	number_of_pixels
+	number_of_tags
+	number_of_media_views
+	total_media_viewtime
+	approximate_bitrate
+	has_audio
+	modified_time
+	framerate
+	number_of_frames
+	number_of_collection_files
+	last_viewed_time
+	archive_timestamp
+	hash_hex
+	pixel_hash_hex
+	blurhash
+	average_colour_l
+	average_colour_c
+	average_colour_gr
+	average_colour_by
+	average_colour_h
+)
+
+var hydrus_order_type = import_time
+var hydrus_sort_asc = false
 
 type hydrus_db_results struct {
 	Boned_stats hydrus_stats `JSON:"boned_stats"`
@@ -194,8 +231,8 @@ func (hyc *Hydrus_conn) process_ids(file_ids []int) []string {
 
 	var file_names []string
 
-	for _, md := range metadata_results.Metadata {
-		mirror_name := fmt.Sprintf("hydrus_%d%s", md.File_id, md.Ext)
+	for idx, md := range metadata_results.Metadata {
+		mirror_name := fmt.Sprintf("hydrus_%d_%d%s", idx, md.File_id, md.Ext)
 		file_names = append(file_names, mirror_name)
 		hd_result_map[mirror_name] = md.File_id
 		hd_meta_map[mirror_name] = md
@@ -218,7 +255,12 @@ func (hyc *Hydrus_conn) collect_ids(tags []string) []int {
 	Err_check(err)
 
 	params := url.QueryEscape(string(tjson))
-	request_url := Hydrus_conf.URL + fmt.Sprintf(search_files, params) + hy_access + Hydrus_conf.ACCESS_KEY + sort_order
+
+	current_sort_type := fmt.Sprintf(sort_type, hydrus_order_type)
+	current_sort_order := fmt.Sprintf(sort_order, hydrus_sort_asc)
+
+	request_url := Hydrus_conf.URL + fmt.Sprintf(search_files, params) + hy_access + Hydrus_conf.ACCESS_KEY +
+		current_sort_order + current_sort_type
 
 	//fmt.Println(request_url)
 

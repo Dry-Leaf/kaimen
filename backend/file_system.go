@@ -179,9 +179,11 @@ func (self *KAIMEN_FS) Readdir(path string,
 		namp = &search_nam
 	} else {
 		if initial_query {
-			nams = append([]string{".", ".."}, query_recent()...)
+			nams = []string{".", ".."}
 			if Hydrus_conf.ENABLED {
 				hy_nams = hydrus_conn.query_recent()
+			} else {
+				nams = append(nams, query_recent()...)
 			}
 		}
 		namp = &nams

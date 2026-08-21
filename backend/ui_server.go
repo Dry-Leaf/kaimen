@@ -45,6 +45,8 @@ const (
 	edittag
 	deletetag
 	edithydrus
+	hydrussortorder
+	hydrussortasc
 	getconf
 	gettags
 	sendtags
@@ -153,7 +155,7 @@ func update(mode MessageType) {
 			dir_length = len(Dirs)
 		}
 
-		resp = message{Type: counter, Value: []interface{}{file_count_result, keys, dir_length > 0, pending_count}}
+		resp = message{Type: counter, Value: []interface{}{file_count_result, keys, dir_length > 0, pending_count, Hydrus_conf.ENABLED}}
 	case updateconf:
 		conf := gather_conf()
 		resp = message{Type: getconf, Value: conf}
@@ -200,7 +202,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 			current := db_creation.Load()
 
 			if current {
-				resp := message{Type: counter, Value: []interface{}{-1, []string{}, true, 0}}
+				resp := message{Type: counter, Value: []interface{}{-1, []string{}, true, 0, false}}
 				err := wsjson.Write(ctx, c, resp)
 				Err_check(err)
 			} else {
@@ -224,7 +226,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 					dir_length = len(Dirs)
 				}
 
-				resp := message{Type: counter, Value: []interface{}{total_file_count, keys, dir_length > 0, pending_create.count.Load()}}
+				resp := message{Type: counter, Value: []interface{}{total_file_count, keys, dir_length > 0, pending_create.count.Load(), Hydrus_conf.ENABLED}}
 				err := wsjson.Write(ctx, c, resp)
 				Err_check(err)
 
@@ -257,15 +259,19 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case userquery:
 			value := req.Value.(string)
 			if len(value) > 0 {
-				nams = append([]string{".", ".."}, query(value)...) //[]string{".", ".."}
+				nams = []string{".", ".."}
 				if Hydrus_conf.ENABLED {
 					hy_nams = hydrus_conn.query(value)
+				} else {
+					nams = append(nams, query(value)...)
 				}
 				initial_query = false
 			} else {
-				nams = append([]string{".", ".."}, query_recent()...)
+				nams = []string{".", ".."}
 				if Hydrus_conf.ENABLED {
 					hy_nams = hydrus_conn.query_recent()
+				} else {
+					nams = append(nams, query_recent()...)
 				}
 				initial_query = false
 			}
@@ -295,6 +301,10 @@ func handle(w http.ResponseWriter, r *http.Request) {
 		case createsource, editsource, deletesource, reordersources, editignore,
 			editinferred, newdirectory, deletedirectory, edithydrus:
 			Edit_conf(req.Type, req.Value)
+		case hydrussortorder:
+			hydrus_order_type = SortOrder(int(req.Value.(float64)))
+		case hydrussortasc:
+			hydrus_sort_asc = req.Value.(bool)
 		case openresults:
 			value := req.Value.(string)
 			Open_search_result(value)
