@@ -29,8 +29,6 @@ Gelbooru requires api credentials to be provided to pull metadata from it. After
 
 `For those who wish to use Kaimen as a Hydrus front-end`
 
-`Note: Kaimen comes with many pre-defined tags, however tags in Hydrus, but not Kaimen, will not appear in autosuggestions. You will need to add those tags to Kaimen manually to allow their autosuggestion.`
-
 Set up the Hydrus client api service and insert its URL and api access key into Kaimen's setting.
 
 <img width="2142" height="738" alt="hydrus_setting_demo" src="https://github.com/user-attachments/assets/87bfed48-8790-4673-a1be-f24fdc3b87f5" />
