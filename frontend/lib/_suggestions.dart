@@ -6,13 +6,13 @@ class Suggestion {
   final String name;
   final int freq;
   final int category;
-  final String remainder;
+  final int length;
 
   Suggestion({
     required this.name,
     required this.freq,
     required this.category,
-    required this.remainder,
+    required this.length,
   });
 
   factory Suggestion.fromJson(Map<String, dynamic> json) {
@@ -20,7 +20,7 @@ class Suggestion {
       name: json['Name'],
       freq: json['Freq'],
       category: json['Category'],
-      remainder: json['Remainder'],
+      length: json['Length'],
     );
   }
 }
@@ -62,26 +62,22 @@ class _SuggestionList extends State<SuggestionList> {
   }
 
   void _returnFocus(int index) {
-    var remainder = widget.suggestions.value[index].remainder;
-    final inputLength = widget._textController.text.length;
+    var name = widget.suggestions.value[index].name;
 
-    final int cursorPos = widget._textController.selection.baseOffset;
-
-    final spaceInclude = widget.multi && cursorPos == inputLength ? " " : "";
-    remainder += spaceInclude;
+    final int cursorPos =
+        widget._textController.selection.baseOffset -
+        widget.suggestions.value[index].length;
 
     final newText =
-        "${widget._textController.text.substring(0, cursorPos)}$remainder$spaceInclude${widget._textController.text.substring(cursorPos)}";
-    final newCursorPosition = cursorPos + remainder.length;
+        "${widget._textController.text.substring(0, cursorPos)}$name ";
+    final newCursorPosition = cursorPos + name.length + 1;
 
     widget._textFieldFocusNode.requestFocus();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.microtask(() {
       widget._textController.value = TextEditingValue(
         text: newText,
-        selection: TextSelection.fromPosition(
-          TextPosition(offset: newCursorPosition),
-        ),
+        selection: TextSelection.collapsed(offset: newCursorPosition),
       );
     });
   }

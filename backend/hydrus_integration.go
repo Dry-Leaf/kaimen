@@ -346,7 +346,7 @@ OUTER_META:
 	return hyc.process_ids(file_ids)
 }
 
-func (hyc *Hydrus_conn) get_tags(query string, limit int) []tag {
+func (hyc *Hydrus_conn) get_suggestions(query string, limit int) []tag {
 	param := url.QueryEscape(query)
 	request_url := Hydrus_conf.URL + fmt.Sprintf(search_tags, param) + hy_access + Hydrus_conf.ACCESS_KEY
 
@@ -380,7 +380,7 @@ func (hyc *Hydrus_conn) get_tags(query string, limit int) []tag {
 		}
 
 		results[idx] = tag{
-			Name: match.Value, Freq: match.Count, Category: cat, Remainder: match.Value[len(query):]}
+			Name: match.Value, Freq: match.Count, Category: cat, Length: len(query)}
 	}
 
 	return results

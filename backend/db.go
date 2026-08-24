@@ -409,10 +409,10 @@ func get_count(query ReadSQL, params ...any) int {
 //5	Meta
 
 type tag struct {
-	Name      string `json:"Name"`
-	Freq      int    `json:"Freq"`
-	Category  int    `json:"Category"`
-	Remainder string `json:"Remainder"`
+	Name     string `json:"Name"`
+	Freq     int    `json:"Freq"`
+	Category int    `json:"Category"`
+	Length   int    `json:"Length"`
 }
 
 func get_suggestions(query string, min, limit float64) []tag {
@@ -433,8 +433,7 @@ func get_suggestions(query string, min, limit float64) []tag {
 		var ctag tag
 		err = rows.Scan(&ctag.Name, &ctag.Freq, &ctag.Category)
 
-		rem := ctag.Name[len(query):]
-		ctag.Remainder = rem
+		ctag.Length = len(query)
 
 		result = append(result, ctag)
 	}

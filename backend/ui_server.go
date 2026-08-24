@@ -243,7 +243,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				limit := req.Value.([]interface{})[3].(float64)
 
 				if Hydrus_conf.ENABLED {
-					results = hydrus_conn.get_tags(lw, int(limit))
+					results = hydrus_conn.get_suggestions(lw, int(limit))
 				} else {
 					results = get_suggestions(lw, req.Value.([]interface{})[2].(float64), limit)
 				}
