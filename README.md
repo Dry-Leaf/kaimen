@@ -58,6 +58,9 @@ Set up the Hydrus client api service and insert its URL and api access key into 
 - libnotify-dev
 - patchelf
 - libavif
+- clang
+- gtk3
+- pkgconf
 
 ### Windows
 - WinFsp
