@@ -22,6 +22,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/pkg/browser"
+	"github.com/winfsp/cgofuse/fuse"
 )
 
 type MessageType int64
@@ -286,6 +287,8 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				}
 				initial_query = false
 			}
+
+			host.Notify("/results", fuse.NOTIFY_UTIME)
 
 			result_count := len(nams)
 			if Hydrus_conf.ENABLED {

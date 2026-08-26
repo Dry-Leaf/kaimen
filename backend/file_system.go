@@ -79,6 +79,11 @@ func (self *KAIMEN_FS) Open(path string, flags int) (errc int, fh uint64) {
 	return 0, 0
 }
 
+func (self *KAIMEN_FS) Utimens(path string, tmsp []fuse.Timespec) int {
+	fmt.Println("path: ", path)
+	return fuse.ENOSYS
+}
+
 func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	switch path {
 	case "/":
@@ -120,10 +125,11 @@ func (self *KAIMEN_FS) Read(path string, buff []byte, ofst int64, fh uint64) (n 
 		fileData, cached := hydrus_conn.fileCache[filename]
 
 		if !cached {
+			var err error
 			hd_id := hd_result_map[filename]
 			request_url := Hydrus_conf.URL + fmt.Sprintf(get_file, hd_id) + hy_access + Hydrus_conf.ACCESS_KEY
 
-			fileData, err := hydrus_conn.get_bytes(request_url)
+			fileData, err = hydrus_conn.get_bytes(request_url)
 			if err != nil {
 				return -int(fuse.ENOENT)
 			}
