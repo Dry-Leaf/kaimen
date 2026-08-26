@@ -5,7 +5,7 @@ vars:
   RELEASE_DIR_LINUX: "../dist/AppDir"
   CGO_WIN: '-IC:\PROGRA~2\WinFsp\inc\fuse'
   ONNX_LIB_WIN: "onnxruntime.dll"
-  ONNX_LIB_LINUX: "libonnxruntime.so.1.26.0"
+  ONNX_LIB_LINUX: "libonnxruntime.so.1.29.0"
   ONNX_MODEL_URL: "https://huggingface.co/azuremountain/camie-tagger-v2_quantized/resolve/main/camie-tagger-v2_quantized.onnx"
 
 tasks:
