@@ -207,7 +207,8 @@ var shrine_loc string
 var result_loc string
 
 func mount() {
-	mount_dir := exe_dir
+	mount_dir, err := os.UserHomeDir()
+	Err_check(err)
 
 	if owd := os.Getenv("OWD"); owd != "" {
 		mount_dir = owd

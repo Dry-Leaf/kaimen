@@ -20,7 +20,7 @@ require (
 	github.com/rjeczalik/notify v0.9.3
 	github.com/vegidio/avif-go v0.0.0-20260607124839-cdea63f9e9f5
 	github.com/winfsp/cgofuse v1.6.0
-	github.com/yalue/onnxruntime_go v1.31.0
+	github.com/yalue/onnxruntime_go v1.35.0
 	golang.org/x/image v0.43.0
 )
 
