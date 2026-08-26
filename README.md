@@ -45,7 +45,6 @@ Set up the Hydrus client api service and insert its URL and api access key into 
 # Building
 
 ## Requirements
-- git lfs
 - go
 - Flutter
 - gcc
