@@ -288,6 +288,7 @@ func handle(w http.ResponseWriter, r *http.Request) {
 				initial_query = false
 			}
 
+			resultsDirectoryMtime = time.Now().Unix()
 			host.Notify("/results", fuse.NOTIFY_UTIME)
 
 			result_count := len(nams)

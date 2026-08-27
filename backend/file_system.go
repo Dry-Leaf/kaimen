@@ -79,10 +79,7 @@ func (self *KAIMEN_FS) Open(path string, flags int) (errc int, fh uint64) {
 	return 0, 0
 }
 
-func (self *KAIMEN_FS) Utimens(path string, tmsp []fuse.Timespec) int {
-	fmt.Println("path: ", path)
-	return fuse.ENOSYS
-}
+var resultsDirectoryMtime int64 = 0
 
 func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc int) {
 	switch path {
@@ -91,6 +88,7 @@ func (self *KAIMEN_FS) Getattr(path string, stat *fuse.Stat_t, fh uint64) (errc 
 		return 0
 	case "/results":
 		stat.Mode = fuse.S_IFDIR | 0555
+		stat.Mtim = fuse.NewTimespec(time.Unix(resultsDirectoryMtime, 0))
 		return 0
 	default:
 		var err error
@@ -197,7 +195,9 @@ func (self *KAIMEN_FS) Readdir(path string,
 
 	// cnams = append([]string{".", ".."}, cnams...)
 	for _, name := range *namp {
-		fill(name, nil, 0)
+		stat := &fuse.Stat_t{}
+		stat.Mtim = fuse.NewTimespec(time.Unix(resultsDirectoryMtime, 0))
+		fill(name, stat, 0)
 	}
 
 	if Hydrus_conf.ENABLED {
